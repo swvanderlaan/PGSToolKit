@@ -151,6 +151,7 @@ else
 	source "$1" # Depends on arg1.
 	
 	CONFIGURATIONFILE="$1" # Depends on arg1 -- but also on where it resides!!!
+	GWASFILES="$2" # Depends on arg2 -- all the GWAS dataset information
 	
 	# Where GBASToolKit resides
 	PRSTOOLKITDIR=${PRSTOOLKITDIR} # from configuration file
@@ -198,9 +199,10 @@ else
 	echo ""
 	echo "The scene is properly set, and directories are created! 🖖"
 	echo "PRSToolKit directory...........................: "${PRSTOOLKITDIR}
+	echo "LD reference data directory....................: "${LDDATA}
+	echo "Validation data directory......................: "${VALIDATIONDATA}
 	echo "Main directory.................................: "${PROJECTDIR}
 	echo "Main analysis output directory.................: "${OUTPUTDIR}
-	echo "Original data directory........................: "${ORIGINALS}
 	echo "Subproject's analysis output directory.........: "${SUBPROJECTDIR}
 	echo "Parsed data is stored in.......................: "${PARSEDDIR}
 	echo "We are processing these cohort(s)..............:"

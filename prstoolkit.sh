@@ -95,7 +95,7 @@ script_copyright_message() {
 script_arguments_error() {
 	echoerror "$1" # Additional message
 	echoerror "- Argument #1 is path_to/filename of the configuration file."
-	echoerror "- Argument #2 is path_to/filename of the list of GWAS files with names."
+	echoerror "- Argument #2 is path_to/filename of the list of GWAS summary statistics-files with arbitrarily chosen names, path_to, and file-names."
 	echoerror ""
 	echoerror "An example command would be: prstoolkit.sh [arg1] [arg2]"
 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -235,8 +235,7 @@ else
 	  	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	  	echoerror ""
 	  	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
-	  	echoerror "You have the following options as reference for the quality control"
-	  	echoerror "and meta-analysis:"
+	  	echoerror "You have the following options to calculate polygenic scores:"
 	  	echoerror "LDPRED   -- use LDpred to LD-correct GWAS summary statistics and calculate polygenic scores [default]"
 	  	echonooption "MANUAL   -- use an in-house developed Rscript to calculate a polygenic score using a limited set of variants"
 	  	echonooption "PLINK    -- use PLINK to calculate scores, GWAS summary statistics will be LD-pruned using p-value thresholds (traditional approach, slow)"
@@ -248,9 +247,55 @@ else
 		script_copyright_message
 		exit 1
 	fi
+	
+	if [[ ${VALIDATIONFORMAT} = "OXFORD" ]]; then
+	
+		echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will automagically convert"
+		echo "this to PLINK-style after optional QC."
+
+	elif [[ ${VALIDATIONFORMAT} = "VCF" ]]; then
+	
+		echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	  	echoerrornooption ""
+	  	echoerrorflashnooption "               *** Oh, computer says no! This option is not available yet. ***"
+	  	echoerrornooption "Unfortunately the [${VALIDATIONFORMAT}] file-format is not supported."
+	  	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+		### The wrong arguments are passed, so we'll exit the script now!
+		echo ""
+		script_copyright_message
+		exit 1
+	
+	elif [[ ${VALIDATIONFORMAT} = "PLINK" ]]; then
+
+		echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will procede "
+		echo "immediately after optional QC."
+		
+	else
+	  	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	  	echoerror ""
+	  	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
+	  	echoerror "You can indicate the following validation file-formats:"
+	  	echoerror "OXFORD   -- file format used by IMPUTE2 (.gen/.bgen) [default]"
+	  	echonooption "VCF   -- VCF file format, version 4.2 is expected"
+	  	echoerror "PLINK    -- PLINK file format; PRSToolKit can immediately use this."
+	  	echonooption "(Opaque: *not implemented yet*)"
+	  	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+		### The wrong arguments are passed, so we'll exit the script now!
+		echo ""
+		script_copyright_message
+		exit 1
+	fi
+	
+	echobold "#========================================================================================================"
+	echobold "#== VALIDATION QUALITY CONTROL"
+	echobold "#========================================================================================================"
+	echobold "#"
+	echo ""
+	echo "We will perform quality control on the validation dataset [${VALIDATIONNAME}] which is in [${VALIDATIONFORMAT}]-format..." 
+
 # 	
 # 	echobold "#========================================================================================================"
-# 	echobold "#== GENE-BASED ANALYSIS OF META-ANALYSIS RESULTS USING VEGAS2"
+# 	echobold "#== VALIDATION QUALITY CONTROL"
 # 	echobold "#========================================================================================================"
 # 	echobold "#"
 # 	### REQUIRED: VEGAS/VEGAS2 settings.

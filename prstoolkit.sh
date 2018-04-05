@@ -198,14 +198,14 @@ else
 	echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	echo ""
 	echo "The scene is properly set, and directories are created! 🖖"
-	echo "PRSToolKit directory...........................: "${PRSTOOLKITDIR}
-	echo "LD reference data directory....................: "${LDDATA}
-	echo "Validation data directory......................: "${VALIDATIONDATA}
-	echo "Main directory.................................: "${PROJECTDIR}
-	echo "Main analysis output directory.................: "${OUTPUTDIR}
-	echo "Subproject's analysis output directory.........: "${SUBPROJECTDIR}
-	echo "Parsed data is stored in.......................: "${PARSEDDIR}
-	echo "We are processing these cohort(s)..............:"
+	echo "PRSToolKit directory............................................: "${PRSTOOLKITDIR}
+	echo "LD reference data directory.....................................: "${LDDATA}
+	echo "Validation data directory.......................................: "${VALIDATIONDATA}
+	echo "Main directory..................................................: "${PROJECTDIR}
+	echo "Main analysis output directory..................................: "${OUTPUTDIR}
+	echo "Subproject's analysis output directory..........................: "${SUBPROJECTDIR}
+	echo "Parsed data is stored in........................................: "${PARSEDDIR}
+	echo "We are processing these GWAS-summary statistics(s)..............: "
 	while IFS='' read -r GWASCOHORT || [[ -n "$GWASCOHORT" ]]; do
 		LINE=${GWASCOHORT}
 		COHORT=$(echo "${LINE}" | awk '{ print $1 }')

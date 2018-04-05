@@ -105,8 +105,8 @@ script_arguments_error() {
 }
 
 echobold "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-echobold "                        PRSToolKit: A TOOLKIT TO CALCULATE POLYGENIC SCORES"
-echoitalic "                    --- prepare and calculate polygenic scores using LDpred ---"
+echobold "                          PRSToolKit: A TOOLKIT TO CALCULATE POLYGENIC SCORES"
+echoitalic "                        --- prepare data and calculate polygenic scores ---"
 echobold ""
 echobold "* Version:      v1.0.0"
 echobold ""

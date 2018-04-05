@@ -216,11 +216,13 @@ else
 	
 	### Making raw data directories, unless they already exist. Depends on arg2.
 	if [[ ${PRSMETHOD} = "LDPRED" ]]; then
-	
+		
+		echo ""
 		echo "Calculating Polygenic Risk Scores using LDpred (by Vilhjálmsson et al. AJHG 2016)."
 
 	
 	elif [[ ${PRSMETHOD} = "MANUAL" || ${PRSMETHOD} = "PLINK" || ${PRSMETHOD} = "PRSICE" ]]; then
+		echo ""
 		echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	  	echoerrornooption ""
 	  	echoerrorflashnooption "               *** Oh, computer says no! This option is not available yet. ***"
@@ -232,6 +234,7 @@ else
 		exit 1
 	
 	else
+	  	echo ""
 	  	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	  	echoerror ""
 	  	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
@@ -250,11 +253,13 @@ else
 	
 	if [[ ${VALIDATIONFORMAT} = "OXFORD" ]]; then
 	
+		echo ""
 		echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will automagically convert"
 		echo "this to PLINK-style after optional QC."
 
 	elif [[ ${VALIDATIONFORMAT} = "VCF" ]]; then
 	
+		echo ""
 		echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	  	echoerrornooption ""
 	  	echoerrorflashnooption "               *** Oh, computer says no! This option is not available yet. ***"
@@ -267,6 +272,7 @@ else
 	
 	elif [[ ${VALIDATIONFORMAT} = "PLINK" ]]; then
 
+		echo ""
 		echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will procede "
 		echo "immediately after optional QC."
 		
@@ -286,12 +292,19 @@ else
 		exit 1
 	fi
 	
-	echobold "#========================================================================================================"
-	echobold "#== VALIDATION QUALITY CONTROL"
-	echobold "#========================================================================================================"
-	echobold "#"
-	echo ""
-	echo "We will perform quality control on the validation dataset [${VALIDATIONNAME}] which is in [${VALIDATIONFORMAT}]-format..." 
+	if [[ ${VALIDATIONQC} = "YES" ]]; then
+	
+		echobold "#========================================================================================================"
+		echobold "#== OPTIONAL VALIDATION QUALITY CONTROL IS IN EFFECT [DEFAULT]"
+		echobold "#========================================================================================================"
+		echobold "#"
+		echo ""
+		echo "We will perform quality control on the validation dataset [${VALIDATIONNAME}] which is in [${VALIDATIONFORMAT}]-format."
+		
+		${QCTOOL} 
+
+	fi
+
 
 # 	
 # 	echobold "#========================================================================================================"

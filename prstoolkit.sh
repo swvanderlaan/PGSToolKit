@@ -314,20 +314,28 @@ else
 # 		
 # 		cat ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt | awk '{ print $2 }' > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt
 # 		
-		#for CHR in $(seq 1 22) X; do 
-		for CHR in 22; do
+		for CHR in $(seq 1 22) X; do 
+		### FOR DEBUGGING
+		### for CHR in 22; do
 			
 			echo ""
 			echo "* processing chromosome ${CHR} and extracting relevant variants."
-			echo "${QCTOOL} -g ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.gen.gz -s ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.sample -excl-rsids ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt -og ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -os ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample"
+			echo "${QCTOOL} -g ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.gen.gz -s ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.sample -excl-rsids ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt -og ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -os ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.sh
+			qsub -S /bin/bash -N PRS.FILTER.${VALIDATIONNAME}.chr${CHR} -o ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.log -e ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.errors -l h_vmem=${QMEMFILTER} -l h_rt=${QRUNTIMEFILTER} -wd ${SUBPROJECTDIR} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.sh
 			
 			echo ""
 			echo "* converting to PLINK-binary format."
-			echo "${QCTOOL} -g ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -s ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample -threshold ${THRESHOLD} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped"
+			echo "${QCTOOL} -g ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -s ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample -threshold ${THRESHOLD} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
+			qsub -S /bin/bash -N PRS.CONVERT.${VALIDATIONNAME}.chr${CHR} -hold_jid PRS.FILTER.${VALIDATIONNAME}.chr${CHR} -o ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.log -e ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.errors -l h_vmem=${QMEMCONVERT} -l h_rt=${QRUNTIMECONVERT} -wd ${SUBPROJECTDIR} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
+			
+			echo ""
+			echo "* deleting old files."
+			echo "rm -v ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.sh
+			qsub -S /bin/bash -N PRS.CLEAN.${VALIDATIONNAME}.chr${CHR} -hold_jid PRS.CONVERT.${VALIDATIONNAME}.chr${CHR} -o ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.log -e ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.errors -l h_vmem=${QMEM} -l h_rt=${QRUNTIME} -wd ${SUBPROJECTDIR} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.sh
 			
 		done
 	
-	elif [[ ${VALIDATIONQC} == "NO"]]; then
+	elif [[ ${VALIDATIONQC} == "NO" ]]; then
 	
 		echo ""
 		echobold "#========================================================================================================"
@@ -337,12 +345,19 @@ else
 		echo ""
 		echo "We will parse the validation dataset [${VALIDATIONNAME}], which is in [${VALIDATIONFORMAT}]-format, to PLINK-binary format."
 		
-		#for CHR in $(seq 1 22) X; do 
-		for CHR in 22; do
+		for CHR in $(seq 1 22) X; do 
+		### FOR DEBUGGING
+		### for CHR in 22; do
 			
 			echo ""
 			echo "* processing chromosome ${CHR} and converting to PLINK-binary format."
-			echo "${QCTOOL} -g ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -s ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample -threshold ${THRESHOLD} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped"
+			echo "${QCTOOL} -g ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -s ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample -threshold ${THRESHOLD} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
+			qsub -S /bin/bash -N PRS.CONVERT.${VALIDATIONNAME}.chr${CHR} -o ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.log -e ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.errors -l h_vmem=${QMEMCONVERT} -l h_rt=${QRUNTIMECONVERT} -wd ${SUBPROJECTDIR} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
+			
+			echo ""
+			echo "* deleting old files."
+			echo "rm -v ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.sh
+			qsub -S /bin/bash -N PRS.CLEAN.${VALIDATIONNAME}.chr${CHR} -hold_jid PRS.CONVERT.${VALIDATIONNAME}.chr${CHR} -o ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.log -e ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.errors -l h_vmem=${QMEM} -l h_rt=${QRUNTIME} -wd ${SUBPROJECTDIR} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.sh
 			
 		done
 		
@@ -413,46 +428,4 @@ else
 fi 
 
 script_copyright_message
-
-###	UtrechtSciencePark Colours Scheme
-###
-### Website to convert HEX to RGB: http://hex.colorrrs.com.
-### For some functions you should divide these numbers by 255.
-###
-###	No.	Color				HEX		RGB							CMYK					CHR		MAF/INFO
-### --------------------------------------------------------------------------------------------------------------------
-###	1	yellow				#FBB820 (251,184,32)				(0,26.69,87.25,1.57) 	=>	1 		or 1.0 > INFO
-###	2	gold				#F59D10 (245,157,16)				(0,35.92,93.47,3.92) 	=>	2		
-###	3	salmon				#E55738 (229,87,56) 				(0,62.01,75.55,10.2) 	=>	3 		or 0.05 < MAF < 0.2 or 0.4 < INFO < 0.6
-###	4	darkpink			#DB003F ((219,0,63)					(0,100,71.23,14.12) 	=>	4		
-###	5	lightpink			#E35493 (227,84,147)				(0,63,35.24,10.98) 	=>	5 		or 0.8 < INFO < 1.0
-###	6	pink				#D5267B (213,38,123)				(0,82.16,42.25,16.47) 	=>	6		
-###	7	hardpink			#CC0071 (204,0,113)					(0,0,0,0) 	=>	7		
-###	8	lightpurple			#A8448A (168,68,138)				(0,0,0,0) 	=>	8		
-###	9	purple				#9A3480 (154,52,128)				(0,0,0,0) 	=>	9		
-###	10	lavendel			#8D5B9A (141,91,154)				(0,0,0,0) 	=>	10		
-###	11	bluepurple			#705296 (112,82,150)				(0,0,0,0) 	=>	11		
-###	12	purpleblue			#686AA9 (104,106,169)				(0,0,0,0) 	=>	12		
-###	13	lightpurpleblue		#6173AD (97,115,173/101,120,180)	(0,0,0,0) 	=>	13		
-###	14	seablue				#4C81BF (76,129,191)				(0,0,0,0) 	=>	14		
-###	15	skyblue				#2F8BC9 (47,139,201)				(0,0,0,0) 	=>	15		
-###	16	azurblue			#1290D9 (18,144,217)				(0,0,0,0) 	=>	16		 or 0.01 < MAF < 0.05 or 0.2 < INFO < 0.4
-###	17	lightazurblue		#1396D8 (19,150,216)				(0,0,0,0) 	=>	17		
-###	18	greenblue			#15A6C1 (21,166,193)				(0,0,0,0) 	=>	18		
-###	19	seaweedgreen		#5EB17F (94,177,127)				(0,0,0,0) 	=>	19		
-###	20	yellowgreen			#86B833 (134,184,51)				(0,0,0,0) 	=>	20		
-###	21	lightmossgreen		#C5D220 (197,210,32)				(0,0,0,0) 	=>	21		
-###	22	mossgreen			#9FC228 (159,194,40)				(0,0,0,0) 	=>	22		or MAF > 0.20 or 0.6 < INFO < 0.8
-###	23	lightgreen			#78B113 (120,177,19)				(0,0,0,0) 	=>	23/X
-###	24	green				#49A01D (73,160,29)					(0,0,0,0) 	=>	24/Y
-###	25	grey				#595A5C (89,90,92)					(0,0,0,0) 	=>	25/XY	or MAF < 0.01 or 0.0 < INFO < 0.2
-###	26	lightgrey			#A2A3A4	(162,163,164)				(0,0,0,0) 	=> 	26/MT
-### 
-### ADDITIONAL COLORS
-### 27	midgrey				#D7D8D7
-### 28	very lightgrey		#ECECEC
-### 29	white				#FFFFFF
-### 30	black				#000000
-### --------------------------------------------------------------------------------------------------------------------
-
 

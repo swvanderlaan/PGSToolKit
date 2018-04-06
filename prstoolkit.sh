@@ -215,13 +215,13 @@ else
 	echo ""
 	
 	### Making raw data directories, unless they already exist. Depends on arg2.
-	if [[ ${PRSMETHOD} = "LDPRED" ]]; then
+	if [[ ${PRSMETHOD} == "LDPRED" ]]; then
 		
 		echo ""
 		echo "Calculating Polygenic Risk Scores using LDpred (by Vilhjálmsson et al. AJHG 2016)."
 
 	
-	elif [[ ${PRSMETHOD} = "MANUAL" || ${PRSMETHOD} = "PLINK" || ${PRSMETHOD} = "PRSICE" ]]; then
+	elif [[ ${PRSMETHOD} == "MANUAL" || ${PRSMETHOD} == "PLINK" || ${PRSMETHOD} == "PRSICE" ]]; then
 		echo ""
 		echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	  	echoerrornooption ""
@@ -251,13 +251,13 @@ else
 		exit 1
 	fi
 	
-	if [[ ${VALIDATIONFORMAT} = "OXFORD" ]]; then
+	if [[ ${VALIDATIONFORMAT} == "OXFORD" ]]; then
 	
 		echo ""
 		echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will automagically convert"
 		echo "this to PLINK-style after optional QC."
 
-	elif [[ ${VALIDATIONFORMAT} = "VCF" ]]; then
+	elif [[ ${VALIDATIONFORMAT} == "VCF" ]]; then
 	
 		echo ""
 		echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -270,7 +270,7 @@ else
 		script_copyright_message
 		exit 1
 	
-	elif [[ ${VALIDATIONFORMAT} = "PLINK" ]]; then
+	elif [[ ${VALIDATIONFORMAT} == "PLINK" ]]; then
 
 		echo ""
 		echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will procede "
@@ -292,7 +292,7 @@ else
 		exit 1
 	fi
 	
-	if [[ ${VALIDATIONQC} = "YES" ]]; then
+	if [[ ${VALIDATIONQC} == "YES" ]]; then
 	
 		echo ""
 		echobold "#========================================================================================================"
@@ -308,19 +308,43 @@ else
 		### --- 1:10235:T:TA 01 10235 T TA TA T 1524.2 1.8055 0 1523 0 0 0.00059159 4.8216e-17 0 0.0019659 0.26078 0.000591577
 		### --- rs145072688:10352:T:TA 01 10352 T TA TA T 490.88 755.85 279.26 46 55 15 0.43066 0.14578 1.0239e-05 0.92398 0.34431 0.430661
 		### --- 1:10505:A:T 01 10505 A T T A 1525.7 0.34198 0 1525 0 0 0.00011205 -0 0 0.00065531 0.2532 0.000112048
-		
-		echo "SNPID RSID Chr BP alleleA alleleB HWE Info CAF" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt
-		zcat ${VALIDATIONDATA}/aegs_combo_1kGp3GoNL5_RAW.stats.gz | tail -n +2 | awk ' $15 > '$MAF' && $16 > '$HWE' && $19 > '$INFO' ' >> ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt
-		
-		cat ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt | awk '{ print $2 }' > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt
+# 		
+# 		echo "SNPID RSID Chr BP alleleA alleleB HWE Info CAF" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt
+# 		zcat ${VALIDATIONDATA}/aegs_combo_1kGp3GoNL5_RAW.stats.gz | tail -n +2 | awk ' $15 > '$MAF' && $16 > '$HWE' && $19 > '$INFO' ' >> ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt
+# 		
+# 		cat ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt | awk '{ print $2 }' > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt
+# 		
+		#for CHR in $(seq 1 22) X; do 
+		for CHR in 22; do
+			
+			echo ""
+			echo "* processing chromosome ${CHR} and extracting relevant variants."
+			echo "${QCTOOL} -g ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.gen.gz -s ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.sample -excl-rsids ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt -og ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -os ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample"
+			
+			echo ""
+			echo "* converting to PLINK-binary format."
+			echo "${QCTOOL} -g ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -s ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample -threshold ${THRESHOLD} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped"
+			
+		done
+	
+	elif [[ ${VALIDATIONQC} == "NO"]]; then
+	
+		echo ""
+		echobold "#========================================================================================================"
+		echobold "#== PARSING DATA TO PLINK-BINARY FORMAT"
+		echobold "#========================================================================================================"
+		echobold "#"
+		echo ""
+		echo "We will parse the validation dataset [${VALIDATIONNAME}], which is in [${VALIDATIONFORMAT}]-format, to PLINK-binary format."
 		
 		#for CHR in $(seq 1 22) X; do 
 		for CHR in 22; do
-		
-			${QCTOOL} -g ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.bgen -s ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.sample -excl-rsids ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt -threshold ${THRESHOLD} -og ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped
+			
+			echo ""
+			echo "* processing chromosome ${CHR} and converting to PLINK-binary format."
+			echo "${QCTOOL} -g ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -s ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample -threshold ${THRESHOLD} ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped"
 			
 		done
-		
 		
 	fi
 

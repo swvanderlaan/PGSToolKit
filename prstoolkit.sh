@@ -413,11 +413,7 @@ else
 # 
 # 		done
 # 	done < ${GWASFILES}
-# 
-# 	echobold "#========================================================================================================"
-# 	echobold "#== GENE-BASED ANALYSIS OF META-ANALYSIS RESULTS USING MAGMA"
-# 	echobold "#========================================================================================================"
-# 	echobold "#"
+
 	
 	### END of if-else statement for the number of command-line arguments passed ###
 fi 

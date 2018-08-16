@@ -1,6 +1,6 @@
 PRSToolKit
 ==========
-#### v0.9-alpha "Aa"
+##### _v0.9-alpha "Aa"_
 [![DOI](https://zenodo.org/badge/128260489.svg)](https://zenodo.org/badge/latestdoi/128260489)
 
 A Toolkit to calculate Polygenic Risk Scores using _LDpred_ or _PRSice_.

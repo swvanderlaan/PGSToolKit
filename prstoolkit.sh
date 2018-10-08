@@ -108,9 +108,9 @@ echobold "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echobold "                          PRSToolKit: A TOOLKIT TO CALCULATE POLYGENIC SCORES"
 echoitalic "                        --- prepare data and calculate polygenic scores ---"
 echobold ""
-echobold "* Version:      v1.0.0"
+echobold "* Version:      v1.0.1"
 echobold ""
-echobold "* Last update:  2018-04-05"
+echobold "* Last update:  2018-09-19"
 echobold "* Written by:   Sander W. van der Laan | s.w.vanderlaan@gmail.com."
 echobold "* Description:  Prepare files and calculate polygenic scores using LDpred. It will do the following:"
 echobold "                - Perform QC prior of validation data to parsing to required format."
@@ -145,6 +145,7 @@ if [[ $# -lt 2 ]]; then
 else
 	echo "These are the "$#" arguments that passed:"
 	echo "The configuration file.................: "$(basename ${1}) # argument 1
+	echo "The GWAS-files file.....................: "$(basename ${2}) # argument 2
 	
 	### SETTING DIRECTORIES (from configuration file).
 	# Loading the configuration file (please refer to the GBASToolKit-Manual for specifications of this file). 
@@ -239,10 +240,10 @@ else
 	  	echoerror ""
 	  	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
 	  	echoerror "You have the following options to calculate polygenic scores:"
-	  	echoerror "LDPRED   -- use LDpred to LD-correct GWAS summary statistics and calculate polygenic scores [default]"
-	  	echonooption "MANUAL   -- use an in-house developed Rscript to calculate a polygenic score using a limited set of variants"
-	  	echonooption "PLINK    -- use PLINK to calculate scores, GWAS summary statistics will be LD-pruned using p-value thresholds (traditional approach, slow)"
-	  	echonooption "PRSICE   -- use PRSice to calculate scores, GWAS summary statistics will be LD-pruned using p-value thresholds (new approach, fast)"
+	  	echoerror "LDPRED   -- use LDpred to LD-correct GWAS summary statistics and calculate polygenic scores [default]."
+	  	echonooption "MANUAL   -- use an in-house developed Rscript to calculate a polygenic score using a limited set of variants."
+	  	echonooption "PLINK    -- use PLINK to calculate scores, GWAS summary statistics will be LD-pruned using p-value thresholds (traditional approach, slow)."
+	  	echonooption "PRSICE   -- use PRSice to calculate scores, GWAS summary statistics will be LD-pruned using p-value thresholds (new approach, fast)."
 	  	echonooption "(Opaque: *not implemented yet*)"
 	  	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 		### The wrong arguments are passed, so we'll exit the script now!
@@ -281,8 +282,8 @@ else
 	  	echoerror ""
 	  	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
 	  	echoerror "You can indicate the following validation file-formats:"
-	  	echoerror "OXFORD   -- file format used by IMPUTE2 (.gen/.bgen) [default]"
-	  	echonooption "VCF   -- VCF file format, version 4.2 is expected"
+	  	echoerror "OXFORD   -- file format used by IMPUTE2 (.gen/.bgen) [default]."
+	  	echonooption "VCF   -- VCF file format, version 4.2 is expected."
 	  	echoerror "PLINK    -- PLINK file format; PRSToolKit can immediately use this."
 	  	echonooption "(Opaque: *not implemented yet*)"
 	  	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -358,6 +359,73 @@ else
 		
 	fi
 
+
+
+# 		echobold "* Making some directories."
+# 		### Make directories for script if they do not exist yet (!!!PREREQUISITE!!!)
+# 		if [ ! -d ${PROJECTDIR}/PRSICE/ ]; then
+# 			echo "The PRSICE directory does not exist, Mr. Bourne will make it for you!"
+# 			mkdir -v ${PROJECTDIR}/PRSICE/
+# 		fi
+# 		PRSICEDIR=${PROJECTDIR}/PRSICE
+# 
+# 		chmod -R a+rwx ${PROJECTDIR}
+# 
+# 		echobold "* Setting some variables specific for PRSice calculations."
+# 		echoitalic " > data files ..."
+# 		BASEDATA="Inouye_bioRxiv_2018/metaGRS_hg19_20180205.cardiogramplusc4d_1kg_cad_add.pval.aegs_matched.txt"
+# 		TARGETDATA="/hpc/dhl_ec/data/_ae_originals/AEGS_COMBINED_IMPUTE2_1000Gp3_GoNL5/aegs_combo_1kGp3GoNL5_RAW_chr#" #" --type bgen "
+# 
+# 		echoitalic " > PRSice general and plotting settings ..."
+# 		PRSICESETTINGS="--no-clump --print-snp --all-score --extract PRSice.valid"
+# 		PRSICEPLOTTING="--bar-col-high \#E55738 --bar-col-low \#1290D9 --quantile 10 --quant-ref 1 --multi-plot 3"
+# 		PRSICETHREADS="4"
+# 		PRSICESEED="91149214"
+# 		PRSICEBARLEVELS="0.00000005,0.0000005,0.000005,0.00005,0.0005,0.005,0.05,0.1,0.2,0.3,0.4,0.5,1"
+# 
+# 		echoitalic " > statistics ..."
+# 		STATTYPE="--beta" 
+# 		TARGETTYPE="T,T,T,T,T,T,T,F,F,F,F,F"
+# 		SNPID="rsid"
+# 		CHRID="chr"
+# 		BPID="position"
+# 		A1ID="effect_allele"
+# 		A2ID="other_allele"
+# 		STATID="beta"
+# 		PVALUEID="P_cardiogramplusc4d_1kg_cad_add"
+# 
+# 		echoitalic " > phenotypes and covariates ..."
+# 		PHENOTYPE="Calcification_bin,Collagen_bin,Fat10_bin,Fat40_bin,Macrophages_bin,SMC_bin,IPH,Macrophages_BC,Mastcells_BC,Neutrophils_BC,SMC_BC,VesselDensityAvg_BC"
+# 		PHENOTYPEFILE="${PROJECTDIR}/aegscombo_phenocov.pheno"
+# 		COVARIATES="sex,Age,OR_year,@PC[1-4]"
+# 		COVARIATESFILE="${PROJECTDIR}/aegscombo_phenocov.pheno"
+# 		EXCLUSION="${PROJECTDIR}/aegscombo.exclusion_nonCEA.list"
+# 
+# 		cd ${PRSICEDIR}
+# 
+# 		prsice.R --prsice $(command -v prsice) \
+# 		--dir ${PRSICEDIR} \
+# 		--seed ${PRSICESEED} \
+# 		--bar-levels ${PRSICEBARLEVELS} \
+# 		--base ${PROJECTDIR}/${BASEDATA} \
+# 		--target ${TARGETDATA} \
+# 		--thread ${PRSICETHREADS} \
+# 		${STATTYPE} \
+# 		--binary-target ${TARGETTYPE} \
+# 		--snp ${SNPID} \
+# 		--chr ${CHRID} \
+# 		--bp ${BPID} \
+# 		--A1 ${A1ID} \
+# 		--A2 ${A2ID} \
+# 		--stat ${STATID} \
+# 		--pvalue ${PVALUEID} \
+# 		--cov-file ${COVARIATESFILE} \
+# 		--cov-col ${COVARIATES} \
+# 		--pheno-file ${PHENOTYPEFILE} \
+# 		--pheno-col ${PHENOTYPE} \
+# 		--remove ${EXCLUSION} \
+# 		${PRSICEPLOTTING} \
+# 		${PRSICESETTINGS}
 
 # 	
 # 	echobold "#========================================================================================================"

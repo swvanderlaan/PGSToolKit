@@ -107,6 +107,9 @@ cat ${ORIGINALDATA}/pheno_cov_exclusions/aegscombo_phenocov.sample | \
 parseTable --col ID_1,ID_2,AEGS_type,COHORT,STUDY_TYPE,sex,Age,AgeSQR,OR_year,OR_year_C,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,Calcification_bin,Collagen_bin,Fat10_bin,Fat40_bin,Macrophages_bin,SMC_bin,IPH,Macrophages_BC,Mastcells_BC,Neutrophils_BC,SMC_BC,VesselDensityAvg_BC | tail -n +3 | \
 sed 's/FEMALE/2/g' | sed 's/MALE/1/g' >> ${PROJECTDIR}/aegscombo_phenocov.pheno
 
+### Be sure to make the proper exclusion list and make sure it has the headers FID IID!
+
+
 ### 
 echoitalic " > PRSice general and plotting settings ..."
 ### Specific PRSice settings
@@ -120,7 +123,7 @@ echoitalic " > PRSice general and plotting settings ..."
 # PRSICESETTINGS="--no-clump --print-snp --extract PRSice.valid --score sum --missing center --all-score --perm 10000"
 PRSICESETTINGS="--print-snp --extract PRSice.valid --score sum --all-score "
 PRSICEPLOTTING="--fastscore --bar-col-high #E55738 --bar-col-low #1290D9 --quantile 100 --quant-break 2.5,5,10,20,40,60,80,90,95,97.5,100 --quant-ref 60"
-PRSICETHREADS="4"
+PRSICETHREADS="8"
 PRSICESEED="91149214" # just a random number
 PRSICEBARLEVELS="0.00000005,0.0000005,0.000005,0.00005,0.0005,0.005,0.05,0.1,0.2,0.3,0.4,0.5,1"
 SCORETYPE="PRSsum" # you can use different scoring algorithms, 'sum', or 'average', etc.
@@ -159,7 +162,7 @@ for PHENO in Calcification_bin Collagen_bin Fat10_bin Fat40_bin Macrophages_bin 
 	--dir ${PRSICEDIR} \
 	--seed ${PRSICESEED} \
 	--bar-levels ${PRSICEBARLEVELS} \
-	--base ${PROJECTDIR}/${BASEDATA} \
+	--base ${BASEDATA} \
 	--target ${TARGETDATA} \
 	--thread ${PRSICETHREADS} \
 	${STATTYPE} \
@@ -173,6 +176,7 @@ for PHENO in Calcification_bin Collagen_bin Fat10_bin Fat40_bin Macrophages_bin 
 	--pvalue ${PVALUEID} \
 	--cov-file ${COVARIATESFILE} \
 	--cov-col ${COVARIATES} \
+	--cov-factor ${COVARIATESFACTOR} \
 	--pheno-file ${PHENOTYPEFILE} \
 	--pheno-col ${PHENOTYPE} \
 	--remove ${EXCLUSION} \
@@ -194,7 +198,7 @@ for PHENO in Macrophages_BC Mastcells_BC Neutrophils_BC SMC_BC VesselDensityAvg_
 	--dir ${PRSICEDIR} \
 	--seed ${PRSICESEED} \
 	--bar-levels ${PRSICEBARLEVELS} \
-	--base ${PROJECTDIR}/${BASEDATA} \
+	--base ${BASEDATA} \
 	--target ${TARGETDATA} \
 	--thread ${PRSICETHREADS} \
 	${STATTYPE} \
@@ -208,6 +212,7 @@ for PHENO in Macrophages_BC Mastcells_BC Neutrophils_BC SMC_BC VesselDensityAvg_
 	--pvalue ${PVALUEID} \
 	--cov-file ${COVARIATESFILE} \
 	--cov-col ${COVARIATES} \
+	--cov-factor ${COVARIATESFACTOR} \
 	--pheno-file ${PHENOTYPEFILE} \
 	--pheno-col ${PHENOTYPE} \
 	--remove ${EXCLUSION} \

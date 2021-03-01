@@ -8,22 +8,27 @@
 #
 # For additional documentation on PRS-CS see https://github.com/getian107/PRScs
 
-# Pre-processing as GWAS statistics should be in the following format: SNP - A1 - A2 - BETA/OR - P
-
-
 # Write the posterior SNP effect size estimates for each chromosome to the specified directory
 ${PYTHONPATH} ${PRSCS} \
 --ref_dir = path_to_ref/ldblk_1kg_eur \
 --bim_prefix = path_to_bim/test \
---sst_file = path_to_sumstats/sumstats.txt \
+--sst_file = ${BASEDATA} \
 --n_gwas = 200000 \
 --chrom = 22 \
 --phi = 1e-2 \
 --out_dir = path_to_output/eur
 
-# Compute the PRS score for each individual in the target sample using PLINK ? 
-
-
+# Compute the PRS score using PLINK --score
+# Documentation: https://www.cog-genomics.org/plink/1.9/score
+${PLINK} --score <filename> \
+${PLINK_VARIANTID_COL} \
+${PLINK_ALLELE_COL} \
+${PLINK_SCORE_COL} \
+${PLINK_HEADER} \
+${PLINK_SUM} \
+${PLINK_IMPUTATION} \
+${PLINK_INCLUDE_CNT} \
+${PLINK_DOSAGE}
 
 
 

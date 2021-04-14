@@ -2,12 +2,11 @@
 #SBATCH --job-name="PRS workflow"                                 #Job name
 #SBATCH --output=/home/dhl_ec/aligterink/logs/batchjob_%j.log     # Standard output and error log
 #SBATCH --mail-user=a.j.ligterink@umcutrecht.nl                   # Mail
-#SBATCH --mail-type=END,FAIL                                          # Mail events (NONE, BEGIN, END, FAIL, ALL)
+#SBATCH --mail-type=NONE		                                  # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --time=20:00:00                                           # Time limit hrs:min:sec
+#SBATCH --mem=4G	                                              # RAM required per node
 
-#SBATCH --mem=32gb                                                 # RAM required per node
-
-set -- "${@:1:2}" "prstoolkit.config" "/home/dhl_ec/aligterink/ProjectFiles/UKBB.GWAS1KG.EXOME.CAD.SOFT.META.PublicRelease.300517.txt.gz"
+set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/UKBB.GWAS1KG.EXOME.CAD.SOFT.META.PublicRelease.300517.SNPIDFIX2.txt.gz"
 
 # Setting colouring
 NONE='\033[00m'
@@ -101,20 +100,21 @@ echoitalic "                        --- prepare data and calculate polygenic sco
 echobold ""
 echobold "* Version:      v1.0.1"
 echobold ""
-echobold "* Last update:  2018-09-19"
-echobold "* Written by:   Sander W. van der Laan | s.w.vanderlaan@gmail.com."
-echobold "* Description:  Prepare files and calculate polygenic scores using LDpred. It will do the following:"
-echobold "                - Perform QC prior of validation data to parsing to required format."
-echobold "                - Automatically parse the imputed data (Oxford-format) to hard-coded PLINK-style format."
-echobold "                - Perform LD-correct GWAS summary statistics (LDpred)."
-echobold "                - Calculate polygenic scores (LDpred)."
-echobold ""
-echobold "* Reference   : https://github.com/bvilhjal/ldpred."
+echobold "* Last update:  2021-04-07"
+echobold "* Written by:   Sander W. van der Laan | s.w.vanderlaan@gmail.com"
+echobold "				  Anton Ligterink | anton.ligterink@gmail.com"
+echobold "* Description:  Prepare files and calculate polygenic scores. This tool will do the following:"
+echobold "                - Perform quality control on GWAS summary data"
+echobold "                - Calculate polygenic risk scores from GWAS summary statistcs (LDpred/PRSICE/RapidoPGS/PRScs)"
+echobold "				  - Calculate polygenic scores using premade scoring systems (PLINK)"
+echobold "* References:   RapidoPGS: https://cran.r-project.org/web/packages/RapidoPGS/vignettes/Computing_RapidoPGS.html"
+echobold "                LDpred: https://github.com/bvilhjal/ldpred      PRSICE: https://www.prsice.info/"
+echobold "                PRScs: https://github.com/getian107/PRScs       PLINK: http://zzz.bwh.harvard.edu/plink/"
 echobold "* REQUIRED: "
-echobold "  - A high-performance computer cluster with a qsub system"
-echobold "  - R v3.2+, Python 2.7+, Perl."
-echobold "  - Required Python 2.7+ modules: [pandas], [scipy], [numpy], [plinkio], [h5py]."
-echobold "  - Note: it will also work on a Mac OS X system with R and Python installed."
+echobold "  - A high-performance computer cluster with a SLURM system"
+echobold "  - R v3.6+, Python 3.7+"
+echobold "  - Required R 3.6+ modules: [RapidoPGS], [data.table], [optparse]"
+echobold "  - Required Python 3.7+ modules: [pandas], [scipy], [numpy], [plinkio], [h5py]"
 ### ADD-IN: function to check requirements...
 ### This might be a viable option! https://gist.github.com/JamieMason/4761049
 echobold ""
@@ -141,7 +141,7 @@ else
 fi 
 
 ##########################################################################################
-### Loading command-line arguments and configuration file (please refer to the GBASToolKit-Manual for specifications of this file). 
+### Loading command-line arguments and configuration file
 source "$1" # Depends on arg1.
 CONFIGURATIONFILE="$1" # Depends on arg1 -- but also on where it resides!!!
 BASEDATA="$2" # Depends on arg2 -- all the GWAS dataset information
@@ -182,47 +182,6 @@ else
 	exit 1
 fi
 
-if [[ ${VALIDATIONFORMAT} == "VCF" ]]; then
-	echo ""
-	echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will procede "
-	echo "immediately after optional QC."
-
-elif [[ ${VALIDATIONFORMAT} == "OXFORD" || ${VALIDATIONFORMAT} == "PLINK" ]]; then
-
-	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-	echoerrornooption ""
-	echoerrorflashnooption "               *** Oh, computer says no! This option is not available yet. ***"
-	echoerrornooption "Unfortunately the [${VALIDATIONFORMAT}] file-format is not supported."
-	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-	### The wrong arguments are passed, so we'll exit the script now!
-	echo ""
-	script_copyright_message
-	exit 1
-	
-else
-	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-	echoerror ""
-	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
-	echoerror "You can indicate the following validation file-formats:"
-	echoerror "OXFORD   -- file format used by IMPUTE2 (.gen/.bgen) [default]."
-	echonooption "VCF   -- VCF file format, version 4.2 is expected."
-	echoerror "PLINK    -- PLINK file format; PRSToolKit can immediately use this."
-	echonooption "(Opaque: *not implemented yet*)"
-	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-	### The wrong arguments are passed, so we'll exit the script now!
-	echo ""
-	script_copyright_message
-	exit 1
-fi
-##########################################################################################
-### SETTING DIRECTORIES (from configuration file).
-
-# # Where PRSToolKit resides
-# PRSTOOLKITDIR=${PRSTOOLKITDIR} # from configuration file
-
-# # Data information
-# LDDATA=${LDDATA} # from configuration file
-# VALIDATIONDATA="${VALIDATIONDATA}/${VALIDATIONFILE}" # from configuration file
 
 ##########################################################################################
 ### SETTING UP NECESSARY DIRECTORIES
@@ -235,38 +194,59 @@ if [ ! -d ${PROJECTDIR}/${OUTPUTDIRNAME} ]; then
 else
 	echo "> Output directory already exists."
 fi
-OUTPUTDIR=${OUTPUTDIRNAME}
+OUTPUTDIR=${PROJECTDIR}/${OUTPUTDIRNAME}
 
 echo ""
-echo "Checking for the existence of the subproject directory [ ${OUTPUTDIR}/${SUBPROJECTDIRNAME} ]."
-if [ ! -d ${PROJECTDIR}/${OUTPUTDIR}/${SUBPROJECTDIRNAME} ]; then
+echo "Checking for the existence of the subproject directory [ ${SUBPROJECTDIRNAME} ]."
+if [ ! -d ${OUTPUTDIR}/${SUBPROJECTDIRNAME} ]; then
 	echo "> Subproject directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${OUTPUTDIR}/${SUBPROJECTDIRNAME}
+	mkdir -v ${OUTPUTDIR}/${SUBPROJECTDIRNAME}
 else
 	echo "> Subproject directory already exists."
 fi
-echo ${PROJECTDIR}
-SUBPROJECTDIR=${PROJECTDIR}/${OUTPUTDIR}/${SUBPROJECTDIRNAME}
+SUBPROJECTDIR=${OUTPUTDIR}/${SUBPROJECTDIRNAME}
 
 echo ""
-echo "Checking for the existence of the parsed data directory [ ${OUTPUTDIR}/${SUBPROJECTDIRNAME}/PARSED ]."
-if [ ! -d ${PROJECTDIR}/${OUTPUTDIR}/${SUBPROJECTDIRNAME}/PARSED ]; then
+echo "Checking for the existence of the parsed data directory [ ${SUBPROJECTDIRNAME}/PARSED ]."
+if [ ! -d ${SUBPROJECTDIR}/PARSED ]; then
 	echo "> Parsed data directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${OUTPUTDIR}/${SUBPROJECTDIRNAME}/PARSED
+	mkdir -v ${SUBPROJECTDIR}/PARSED
 else
 	echo "> Parsed data directory already exists."
 fi
-PARSEDDIR=${PROJECTDIR}/${OUTPUTDIR}/${SUBPROJECTDIRNAME}/PARSED
+PARSEDDIR=${SUBPROJECTDIR}/PARSED
+
+# echo ""
+# echo "Checking for the existence of the ${PRSMETHOD} directory [ ${PROJECTDIR}/${PRSMETHOD} ]."
+# if [ ! -d ${PROJECTDIR}/${PRSMETHOD} ]; then
+# 	echo "> ${PRSMETHOD} directory doesn't exist - Mr. Bourne will create it for you."
+# 	mkdir -v ${PROJECTDIR}/${PRSMETHOD}
+# else
+# 	echo "> ${PRSMETHOD} directory already exists."
+# fi
+# PRSDIR=${PROJECTDIR}/${PRSMETHOD}
 
 echo ""
-echo "Checking for the existence of the ${PRSMETHOD} directory [ ${PROJECTDIR}/${PRSMETHOD} ]."
-if [ ! -d ${PROJECTDIR}/${PRSMETHOD} ]; then
-	echo "> ${PRSMETHOD} directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${PRSMETHOD}
+echo "Checking for the existence of the ${TEMPDIRNAME} directory [ ${PROJECTDIR}/${TEMPDIRNAME} ]."
+if [ ! -d ${PROJECTDIR}/${TEMPDIRNAME} ]; then
+	echo "> ${TEMPDIRNAME} directory doesn't exist - Mr. Bourne will create it for you."
+	mkdir -v ${PROJECTDIR}/${TEMPDIRNAME}
 else
-	echo "> ${PRSMETHOD} directory already exists."
+	echo "> ${TEMPDIRNAME} directory already exists."
 fi
-PRSDIR=${PROJECTDIR}/${PRSMETHOD}
+PRSDIR=${PROJECTDIR}/${TEMPDIRNAME}
+
+echo ""
+echo "Checking for the existence of the ${LOGDIRNAME} directory [ ${PROJECTDIR}/${LOGDIRNAME} ]."
+if [ ! -d ${PROJECTDIR}/${LOGDIRNAME} ]; then
+	echo "> ${LOGDIRNAME} directory doesn't exist - Mr. Bourne will create it for you."
+	mkdir -v ${PROJECTDIR}/${LOGDIRNAME}
+else
+	echo "> ${LOGDIRNAME} directory already exists."
+fi
+LOGDIR=${PROJECTDIR}/${LOGDIRNAME}
+
+OUTPUTNAME=${PROJECTNAME}_${PRSMETHOD}_$(date +%Y-%b-%d--%H-%M)
 
 echo ""
 echo "The scene is properly set, and directories are created! 🖖"
@@ -277,7 +257,7 @@ echo "Main directory..................................................: "${PROJE
 echo "Main analysis output directory..................................: "${OUTPUTDIR}
 echo "Subproject's analysis output directory..........................: "${SUBPROJECTDIR}
 echo "Parsed data directory...........................................: "${PARSEDDIR}
-echo "PRS method directory............................................: "${PRSDIR}
+echo "Working directory...............................................: "${PRSDIR}
 echo "We are processing these GWAS-summary statistics(s)..............: "${BASEDATA}
 # while IFS='' read -r GWASCOHORT || [[ -n "$GWASCOHORT" ]]; do
 # 	LINE=${GWASCOHORT}
@@ -285,6 +265,196 @@ echo "We are processing these GWAS-summary statistics(s)..............: "${BASED
 # 	echo " * ${COHORT}"
 # done < ${BASEDATA}
 echo ""
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+# check_slurm_codes() {
+# 	echo "${CURRENT_JOBID}"
+# 	echo "$(sacct -j ${CURRENT_JOBID})"
+# }
+QC_DEPENDENCY=""
+if [[ ${QC} == "YES" ]]; then
+
+	echo ""
+	echobold "#========================================================================================================"
+	echobold "#== OPTIONAL QUALITY CONTROL IS IN EFFECT [DEFAULT]"
+	echobold "#========================================================================================================"
+	echobold "#"
+	echo ""
+	echo "We will perform quality control on the base dataset, using the following thresholds:"
+	echo "      Minor allele frequency: ${MAF}"
+	echo "      Imputation score:       ${INFO}"
+
+	# Start the quality control job
+	QC_RESULTS_FILE=${PRSDIR}/QC_results.txt
+	QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.R -b ${BASEDATA} -s ${STATS_FILE} -o ${PRSDIR}/QCd_basefile.txt.gz -m ${MAF} -i ${INFO} -a ${BF_SNP_COL} -d ${STATS_ID_COL} -c ${STATS_MAF_COL} -t ${STATS_INFO_COL} -r ${QC_RESULTS_FILE})
+	QC_DEPENDENCY="--dependency=afterany:${QC_JOBID}"
+	
+	echo ""
+	cat ${QC_RESULTS_FILE}
+	echo ""
+
+	# We will now use the quality controlled file as our new base file
+	BASEDATA=${PRSDIR}/QCd_basefile.txt.gz
+
+elif [[ ${QC} == "NO" ]]; then
+	echo ""
+	echo "Quality control will not be performed"
+	echo ""
+else 
+	echo ""
+	echo "QC parameter should be [YES/NO], not \"${QC}\""
+	echo ""
+	exit 1
+fi
+
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo ""
+echo "Risk score computation will now commence."
+echo ""
+##########################################################################################
+### Run the individual PRS method scripts
+
+RESULTS_FILE=${OUTPUTDIR}/${OUTPUTNAME}_RESULTS.txt
+
+if [[ ${PRSMETHOD} == "PLINK" ]]; then
+
+	# Calculate the effect sizes for each chromosome
+	### TODO: make this run in parallel and make it prettier
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},PLINK_REF_POS=${PLINK_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},PLINK_VARIANT_ID_COL=${PLINK_VARIANT_ID_COL},PLINK_ALLELE_COL=${PLINK_ALLELE_COL},PLINK_SCORE_COL=${PLINK_SCORE_COL},PLINK_HEADER=${PLINK_HEADER},PLINK_SETTINGS=${PLINK_SETTINGS} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINKSCORE_DEPENDENCY="--dependency=afterany:${PLINKSCORE_JOBID}"
+
+	# Sum the effect sizes to calculate the final score
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -f 1 -i 2 -r 6 -o ${RESULTS_FILE})
+
+
+elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
+	# source "${PRSTOOLKITSCRIPTS}/prscs.sh"
+	echo "Not implemented yet!"
+	 
+elif [[ ${PRSMETHOD} == "LDPRED" ]]; then
+	echo "Not implemented yet!"
+
+elif [[ ${PRSMETHOD} == "PRSICE2" ]]; then
+	# source "${PRSTOOLKITSCRIPTS}/prsice.sh"
+	echo "Not implemented yet!"
+
+
+elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
+
+	#Set PLINK parameters
+	PLINK_VARIANT_ID_COL=1
+	PLINK_ALLELE_COL=2
+	PLINK_SCORE_COL=3
+	PLINK_HEADER="header"
+	WEIGHTS_FILE="${PRSDIR}/${OUTPUTNAME}_weights.txt"
+
+	# Calculate weights using RapidoPGS
+	RAPIDO_JOBID=$(sbatch --parsable --wait --job-name=PRS_RAPIDO ${QC_DEPENDENCY} --time ${RUNTIME_RAPIDO} --mem ${MEMORY_RAPIDO} -o ${LOGDIR}/${OUTPUTNAME}_RAPIDO.log ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${WEIGHTS_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_SNP_COL} -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_A1_COL} -a ${BF_A2_COL} -f ${BF_FRQ_COL} -w ${BF_WFRQ} -m ${BF_MSR_COL} -e ${BF_SE_COL} -s ${BF_SBJ_COL})
+	RAPIDO_DEPENDENCY="--dependency=afterany:${RAPIDO_JOBID}"
+
+	# ${RSCRIPTPATH} ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${SCORE_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_SNP_COL} \
+	# -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_A1_COL} -a ${BF_A2_COL} -f ${BF_FRQ_COL} -w ${BF_WFRQ} -m ${BF_MSR_COL} -e ${BF_SE_COL} -s ${BF_SBJ_COL}
+
+	
+	# Calculate individual scores using PLINK
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${RAPIDO_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},PLINK_REF_POS=${PLINK_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},PLINK_VARIANT_ID_COL=${PLINK_VARIANT_ID_COL},PLINK_ALLELE_COL=${PLINK_ALLELE_COL},PLINK_SCORE_COL=${PLINK_SCORE_COL},PLINK_HEADER=${PLINK_HEADER},PLINK_SETTINGS=${PLINK_SETTINGS} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINKSCORE_DEPENDENCY="--dependency=afterany:${PLINKSCORE_JOBID}"
+
+	# Sum the effect sizes to calculate the final score
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -f 1 -i 2 -r 6 -o ${RESULTS_FILE})
+
+	# source "${PRSTOOLKITSCRIPTS}/plinkscore.sh"
+	# ${RSCRIPTPATH} ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R
+fi
+
+# Make all created files accessible
+# for file in ${PRSDIR}/*; do
+#     # readlink -f $file
+# 	chmod -Rv a+rwx $file
+#     #chmod -Rv a+rwx ${file%.vcf.gz}.bgen
+# done
+echo ""
+echo "${PRSMETHOD} risk score calculation has finished."
+echo "The risk scores were stored in [ ${RESULTS_FILE} ]"
+echo ""
+echocyan "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... 🖖 "
+
+
+
+
+
+
+
+# ${RSCRIPTPATH} /home/dhl_ec/aligterink/scripts/QC_testing.R
+# ${RSCRIPTPATH} ${PRSTOOLKITSCRIPTS}/QC.R
+
+
+# ${RSCRIPTPATH} /home/dhl_ec/aligterink/PRSToolKit/SCRIPTS/Loose_scripts/vcf_chrbp_to_rs.R
+
+# QCTOOL="/hpc/local/CentOS7/dhl_ec/software/qctool_v2.0.8/build/release/qctool_v2.0.8"
+# VCFFILE="/hpc/dhl_ec/data/_ae_originals/AEGS_COMBINED_EAGLE2_1000Gp3v5HRCr11/aegs.qc.1kgp3hrcr11.idfix.chr21.vcf.gz"
+# MAPFILE="/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/mapfiles/chr21_whole2.txt"
+
+# OUTPUT="/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/outputfiles/chr21_whole2.vcf.gz"
+# ${QCTOOL} -g ${VCFFILE} -og ${OUTPUT} -map-id-data ${MAPFILE} -compare-variants-by position
+
+# file=/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/outputfiles/chr21_whole2.vcf.gz
+# out=/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/outputfiles/chr21_whole2.bgen
+# /hpc/local/CentOS7/dhl_ec/software/qctool_v204 -g $file -vcf-genotype-field GP -og $out
+
+# ${RSCRIPTPATH} /home/dhl_ec/aligterink/PRSToolKit/SCRIPTS/Loose_scripts/sumstats_summary.R
+
+
+
+
+
+
+
+# if [[ ${VALIDATIONFORMAT} == "VCF" ]]; then
+# 	echo ""
+# 	echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will procede "
+# 	echo "immediately after optional QC."
+
+# elif [[ ${VALIDATIONFORMAT} == "OXFORD" || ${VALIDATIONFORMAT} == "PLINK" ]]; then
+
+# 	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+# 	echoerrornooption ""
+# 	echoerrorflashnooption "               *** Oh, computer says no! This option is not available yet. ***"
+# 	echoerrornooption "Unfortunately the [${VALIDATIONFORMAT}] file-format is not supported."
+# 	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+# 	### The wrong arguments are passed, so we'll exit the script now!
+# 	echo ""
+# 	script_copyright_message
+# 	exit 1
+	
+# else
+# 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+# 	echoerror ""
+# 	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
+# 	echoerror "You can indicate the following validation file-formats:"
+# 	echoerror "OXFORD   -- file format used by IMPUTE2 (.gen/.bgen) [default]."
+# 	echonooption "VCF   -- VCF file format, version 4.2 is expected."
+# 	echoerror "PLINK    -- PLINK file format; PRSToolKit can immediately use this."
+# 	echonooption "(Opaque: *not implemented yet*)"
+# 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+# 	### The wrong arguments are passed, so we'll exit the script now!
+# 	echo ""
+# 	script_copyright_message
+# 	exit 1
+# fi
+##########################################################################################
+### SETTING DIRECTORIES (from configuration file).
+
+# # Where PRSToolKit resides
+# PRSTOOLKITDIR=${PRSTOOLKITDIR} # from configuration file
+
+# # Data information
+# LDDATA=${LDDATA} # from configuration file
+# VALIDATIONDATA="${VALIDATIONDATA}/${VALIDATIONFILE}" # from configuration file
+
+
+
 
 
 
@@ -354,30 +524,13 @@ echo ""
 	
 # 	fi
 
-##########################################################################################
-### 
+# 
 
-if [[ ${PRSMETHOD} == "PLINK" ]]; then
-	echo "Not implemented yet!"
 
-elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
-	source "${PRSTOOLKITSCRIPTS}/prscs.sh"
-	 
-elif [[ ${PRSMETHOD} == "LDPRED" ]]; then
-	echo "Not implemented yet!"
 
-elif [[ ${PRSMETHOD} == "PRSICE2" ]]; then
-	source "${PRSTOOLKITSCRIPTS}/prsice.sh"
 
-elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
-	# source "${PRSTOOLKITSCRIPTS}/rapidopgs.sh"
-	${RSCRIPTPATH} ${PRSTOOLKITSCRIPTS}/rapidopgs.R -b ${BASEDATA} 
 
-fi
-	
-echo ""
-echocyan "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... 🖖 "
+
 
 
 # 	echobold "#========================================================================================================"
@@ -435,7 +588,4 @@ echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... �
 # 	done < ${BASEDATA}
 #
 	
-
-
-script_copyright_message
-
+# script_copyright_message

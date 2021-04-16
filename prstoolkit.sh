@@ -6,7 +6,7 @@
 #SBATCH --time=20:00:00                                           # Time limit hrs:min:sec
 #SBATCH --mem=4G	                                              # RAM required per node
 
-set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/UKBB.GWAS1KG.EXOME.CAD.SOFT.META.PublicRelease.300517.SNPIDFIX2.txt.gz"
+set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/UKBB.GWAS1KG.EXOME.CAD.SOFT.META.PublicRelease.300517.rsid.QCd.txt.gz"
 
 # Setting colouring
 NONE='\033[00m'
@@ -206,28 +206,18 @@ else
 fi
 SUBPROJECTDIR=${OUTPUTDIR}/${SUBPROJECTDIRNAME}
 
-echo ""
-echo "Checking for the existence of the parsed data directory [ ${SUBPROJECTDIRNAME}/PARSED ]."
-if [ ! -d ${SUBPROJECTDIR}/PARSED ]; then
-	echo "> Parsed data directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${SUBPROJECTDIR}/PARSED
-else
-	echo "> Parsed data directory already exists."
-fi
-PARSEDDIR=${SUBPROJECTDIR}/PARSED
-
 # echo ""
-# echo "Checking for the existence of the ${PRSMETHOD} directory [ ${PROJECTDIR}/${PRSMETHOD} ]."
-# if [ ! -d ${PROJECTDIR}/${PRSMETHOD} ]; then
-# 	echo "> ${PRSMETHOD} directory doesn't exist - Mr. Bourne will create it for you."
-# 	mkdir -v ${PROJECTDIR}/${PRSMETHOD}
+# echo "Checking for the existence of the parsed data directory [ ${SUBPROJECTDIRNAME}/PARSED ]."
+# if [ ! -d ${SUBPROJECTDIR}/PARSED ]; then
+# 	echo "> Parsed data directory doesn't exist - Mr. Bourne will create it for you."
+# 	mkdir -v ${SUBPROJECTDIR}/PARSED
 # else
-# 	echo "> ${PRSMETHOD} directory already exists."
+# 	echo "> Parsed data directory already exists."
 # fi
-# PRSDIR=${PROJECTDIR}/${PRSMETHOD}
+# PARSEDDIR=${SUBPROJECTDIR}/PARSED
 
 echo ""
-echo "Checking for the existence of the ${TEMPDIRNAME} directory [ ${PROJECTDIR}/${TEMPDIRNAME} ]."
+echo "Checking for the existence of the working directory [ ${PROJECTDIR}/${TEMPDIRNAME} ]."
 if [ ! -d ${PROJECTDIR}/${TEMPDIRNAME} ]; then
 	echo "> ${TEMPDIRNAME} directory doesn't exist - Mr. Bourne will create it for you."
 	mkdir -v ${PROJECTDIR}/${TEMPDIRNAME}
@@ -256,14 +246,11 @@ echo "Validation data directory.......................................: "${VALID
 echo "Main directory..................................................: "${PROJECTDIR}
 echo "Main analysis output directory..................................: "${OUTPUTDIR}
 echo "Subproject's analysis output directory..........................: "${SUBPROJECTDIR}
-echo "Parsed data directory...........................................: "${PARSEDDIR}
+# echo "Parsed data directory...........................................: "${PARSEDDIR}
 echo "Working directory...............................................: "${PRSDIR}
+echo "Log directory...................................................: "${LOGDIR}
 echo "We are processing these GWAS-summary statistics(s)..............: "${BASEDATA}
-# while IFS='' read -r GWASCOHORT || [[ -n "$GWASCOHORT" ]]; do
-# 	LINE=${GWASCOHORT}
-# 	COHORT=$(echo "${LINE}" | awk '{ print $1 }')
-# 	echo " * ${COHORT}"
-# done < ${BASEDATA}
+
 echo ""
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
@@ -271,6 +258,7 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # 	echo "${CURRENT_JOBID}"
 # 	echo "$(sacct -j ${CURRENT_JOBID})"
 # }
+
 QC_DEPENDENCY=""
 if [[ ${QC} == "YES" ]]; then
 
@@ -285,12 +273,12 @@ if [[ ${QC} == "YES" ]]; then
 	echo "      Imputation score:       ${INFO}"
 
 	# Start the quality control job
-	QC_RESULTS_FILE=${PRSDIR}/QC_results.txt
-	QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.R -b ${BASEDATA} -s ${STATS_FILE} -o ${PRSDIR}/QCd_basefile.txt.gz -m ${MAF} -i ${INFO} -a ${BF_SNP_COL} -d ${STATS_ID_COL} -c ${STATS_MAF_COL} -t ${STATS_INFO_COL} -r ${QC_RESULTS_FILE})
+	QC_SUMMARY_FILE=${PRSDIR}/${OUTPUTNAME}_QC_results.txt
+	QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.R -b ${BASEDATA} -s ${STATS_FILE} -o ${PRSDIR}/QCd_basefile.txt.gz -m ${MAF} -i ${INFO} -a ${BF_SNP_COL} -d ${STATS_ID_COL} -c ${STATS_MAF_COL} -t ${STATS_INFO_COL} -r ${QC_SUMMARY_FILE})
 	QC_DEPENDENCY="--dependency=afterany:${QC_JOBID}"
 	
 	echo ""
-	cat ${QC_RESULTS_FILE}
+	cat ${QC_SUMMARY_FILE}
 	echo ""
 
 	# We will now use the quality controlled file as our new base file
@@ -302,7 +290,7 @@ elif [[ ${QC} == "NO" ]]; then
 	echo ""
 else 
 	echo ""
-	echo "QC parameter should be [YES/NO], not \"${QC}\""
+	echo "QC parameter should be [YES/NO], not \"${QC}\". Exiting..."
 	echo ""
 	exit 1
 fi
@@ -311,10 +299,11 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echo ""
 echo "Risk score computation will now commence."
 echo ""
+
+RESULTS_FILE=${SUBPROJECTDIR}/${OUTPUTNAME}_results.txt
+
 ##########################################################################################
 ### Run the individual PRS method scripts
-
-RESULTS_FILE=${OUTPUTDIR}/${OUTPUTNAME}_RESULTS.txt
 
 if [[ ${PRSMETHOD} == "PLINK" ]]; then
 
@@ -324,8 +313,7 @@ if [[ ${PRSMETHOD} == "PLINK" ]]; then
 	PLINKSCORE_DEPENDENCY="--dependency=afterany:${PLINKSCORE_JOBID}"
 
 	# Sum the effect sizes to calculate the final score
-	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -f 1 -i 2 -r 6 -o ${RESULTS_FILE})
-
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
 
 elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
 	# source "${PRSTOOLKITSCRIPTS}/prscs.sh"
@@ -351,20 +339,14 @@ elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
 	# Calculate weights using RapidoPGS
 	RAPIDO_JOBID=$(sbatch --parsable --wait --job-name=PRS_RAPIDO ${QC_DEPENDENCY} --time ${RUNTIME_RAPIDO} --mem ${MEMORY_RAPIDO} -o ${LOGDIR}/${OUTPUTNAME}_RAPIDO.log ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${WEIGHTS_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_SNP_COL} -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_A1_COL} -a ${BF_A2_COL} -f ${BF_FRQ_COL} -w ${BF_WFRQ} -m ${BF_MSR_COL} -e ${BF_SE_COL} -s ${BF_SBJ_COL})
 	RAPIDO_DEPENDENCY="--dependency=afterany:${RAPIDO_JOBID}"
-
-	# ${RSCRIPTPATH} ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${SCORE_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_SNP_COL} \
-	# -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_A1_COL} -a ${BF_A2_COL} -f ${BF_FRQ_COL} -w ${BF_WFRQ} -m ${BF_MSR_COL} -e ${BF_SE_COL} -s ${BF_SBJ_COL}
-
 	
 	# Calculate individual scores using PLINK
 	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${RAPIDO_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},PLINK_REF_POS=${PLINK_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},PLINK_VARIANT_ID_COL=${PLINK_VARIANT_ID_COL},PLINK_ALLELE_COL=${PLINK_ALLELE_COL},PLINK_SCORE_COL=${PLINK_SCORE_COL},PLINK_HEADER=${PLINK_HEADER},PLINK_SETTINGS=${PLINK_SETTINGS} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
 	PLINKSCORE_DEPENDENCY="--dependency=afterany:${PLINKSCORE_JOBID}"
 
 	# Sum the effect sizes to calculate the final score
-	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -f 1 -i 2 -r 6 -o ${RESULTS_FILE})
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
 
-	# source "${PRSTOOLKITSCRIPTS}/plinkscore.sh"
-	# ${RSCRIPTPATH} ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R
 fi
 
 # Make all created files accessible
@@ -375,35 +357,15 @@ fi
 # done
 echo ""
 echo "${PRSMETHOD} risk score calculation has finished."
-echo "The risk scores were stored in [ ${RESULTS_FILE} ]"
 echo ""
 echocyan "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... 🖖 "
 
+script_copyright_message
 
 
 
 
-
-
-# ${RSCRIPTPATH} /home/dhl_ec/aligterink/scripts/QC_testing.R
-# ${RSCRIPTPATH} ${PRSTOOLKITSCRIPTS}/QC.R
-
-
-# ${RSCRIPTPATH} /home/dhl_ec/aligterink/PRSToolKit/SCRIPTS/Loose_scripts/vcf_chrbp_to_rs.R
-
-# QCTOOL="/hpc/local/CentOS7/dhl_ec/software/qctool_v2.0.8/build/release/qctool_v2.0.8"
-# VCFFILE="/hpc/dhl_ec/data/_ae_originals/AEGS_COMBINED_EAGLE2_1000Gp3v5HRCr11/aegs.qc.1kgp3hrcr11.idfix.chr21.vcf.gz"
-# MAPFILE="/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/mapfiles/chr21_whole2.txt"
-
-# OUTPUT="/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/outputfiles/chr21_whole2.vcf.gz"
-# ${QCTOOL} -g ${VCFFILE} -og ${OUTPUT} -map-id-data ${MAPFILE} -compare-variants-by position
-
-# file=/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/outputfiles/chr21_whole2.vcf.gz
-# out=/hpc/dhl_ec/aligterink/ProjectFiles/vcf_qctool_files/outputfiles/chr21_whole2.bgen
-# /hpc/local/CentOS7/dhl_ec/software/qctool_v204 -g $file -vcf-genotype-field GP -og $out
-
-# ${RSCRIPTPATH} /home/dhl_ec/aligterink/PRSToolKit/SCRIPTS/Loose_scripts/sumstats_summary.R
 
 
 
@@ -452,7 +414,6 @@ echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... �
 # # Data information
 # LDDATA=${LDDATA} # from configuration file
 # VALIDATIONDATA="${VALIDATIONDATA}/${VALIDATIONFILE}" # from configuration file
-
 
 
 
@@ -531,8 +492,6 @@ echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... �
 
 
 
-
-
 # 	echobold "#========================================================================================================"
 # 	echobold "#== VALIDATION QUALITY CONTROL"
 # 	echobold "#========================================================================================================"
@@ -588,4 +547,4 @@ echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... �
 # 	done < ${BASEDATA}
 #
 	
-# script_copyright_message
+

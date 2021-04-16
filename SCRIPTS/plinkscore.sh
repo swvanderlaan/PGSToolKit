@@ -11,7 +11,6 @@
 # Compute the PRS score using PLINK --score
 
 for file in ${VALIDATIONDATA}/${VALIDATIONPREFIX}*.bgen; do
-    echo "${file}"
     ${PLINK} \
     --bgen $file ${PLINK_REF_POS} \
     --sample ${SAMPLE_FILE} \
@@ -23,20 +22,3 @@ for file in ${VALIDATIONDATA}/${VALIDATIONPREFIX}*.bgen; do
     ${PLINK_HEADER} \
     ${PLINK_SETTINGS}
 done
-
-    # ${PLINK_SUM} \
-    # ${PLINK_IMPUTATION} \
-    # ${PLINK_INCLUDE_CNT} \
-    # ${PLINK_DOSAGE}
-
-# # Command for PLINK 2.0
-# ${PLINK} \
-# --bgen /hpc/dhl_ec/data/_ae_originals/AEGS_COMBINED_EAGLE2_1000Gp3v5HRCr11/aegs.qc.1kgp3hrcr11.idfix.chr10.bgen ref-first \
-# --sample /hpc/dhl_ec/aligterink/ProjectFiles/sample_data/20210309.LOOKUP.AEGS123.MFfix.lim.sample \
-# --score ${PRSDIR}/weights.txt \
-# 1 \
-# 2 \
-# 3 \
-# header \
-# --out ${PRSDIR}/plink2
-

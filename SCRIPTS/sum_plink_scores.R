@@ -26,8 +26,8 @@ option_list = list(
   make_option(c("-i", "--siidcol"), action="store", default=NA, type='character', help="IID column position in the sample file (start from 1)"),
   make_option(c("-d", "--scoredir"), action="store", default=NA, type='character', help="Directory in which the risk scores reside"),
   make_option(c("-p", "--scoreprefix"), action="store", default=NA, type='character', help="Prefix of the risk score files"),
-  make_option(c("-f", "--rfidcol"), action="store", default=NA, type='character', help="FID column position in the score files (start from 1)"),
-  make_option(c("-i", "--riidcol"), action="store", default=NA, type='character', help="IID column position in the score files (start from 1)"),
+  make_option(c("-a", "--rfidcol"), action="store", default=NA, type='character', help="FID column position in the score files (start from 1)"),
+  make_option(c("-b", "--riidcol"), action="store", default=NA, type='character', help="IID column position in the score files (start from 1)"),
   make_option(c("-r", "--rscorecol"), action="store", default=NA, type='character', help="Risk score column position in the score files (start from 1)"),
   make_option(c("-o", "--out"), action="store", default=NA, type='character', help="Path to the output file")
 )

@@ -19,7 +19,7 @@ package.check <- lapply(
   packages,
   FUN = function(x) {
     if (!require(x, character.only = TRUE)) {
-      install.packages(x, dependencies = TRUE)
+      install.packages(x, dependencies = TRUE, repos='http://cran.us.r-project.org')
       try(library(x), silent=TRUE)
     }
   }
@@ -41,7 +41,13 @@ option_list = list(
   make_option(c("-w", "--whichfrq"), action="store", default=NA, type='character', help="'effect' if the --freqcol points to the effect allele frequence, 'alt' if it points to the alternative allele frequency"),
   make_option(c("-m", "--measurecol"), action="store", default=NA, type='character', help="Name of the beta/log(OR)/effect size column in the base file"),
   make_option(c("-e", "--secol"), action="store", default=NA, type='character', help="Name of the column of the standard error of the beta/log(OR)/effect size value in the base file"),
-  make_option(c("-s", "--sbjcol"), action="store", default=NA, type='character', help="Name of the column containing the samle size for each SNP")
+  make_option(c("-s", "--samples"), action="store", default=NA, type='character', help="Sample size of the GWAS"),
+  make_option(c("-g", "--fthrs"), action="store", default=NA, type='character', help="scalar indicating the ppi threshold (if filt_threshold < 1) or the number of top SNPs by absolute weights (if filt_threshold >= 1) to filter the dataset after PGS computation. If NULL (DEFAULT), no thresholding will be applied."),
+  make_option(c("-j", "--recalc"), action="store", default=NA, type='character', help="logical indicating if weights should be recalculated after thresholding, only relevant if filt_threshold is defined"),
+  make_option(c("-l", "--trait"), action="store", default=NA, type='character', help="string specifying if the dataset corresponds to a case-control (\"cc\") or a quantitative trait (\"quant\") GWAS. If trait==quant, an ALT_FREQ column is required"),
+  make_option(c("-v", "--pii"), action="store", default=NA, type='character', help="scalar representing the prior probability"),
+  make_option(c("-x", "--prior"), action="store", default=NA, type='character', help=""),
+  make_option(c("-z", "--ref"), action="store", default=NA, type='character', help="")
   )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -58,12 +64,12 @@ colnames(sumstats)[colnames(sumstats) == opt$freqcol] <- "ALT_FREQ"
 colnames(sumstats)[colnames(sumstats) == opt$measurecol] <- "BETA"
 colnames(sumstats)[colnames(sumstats) == opt$secol] <- "SE"
 
-# RapidoPGS requires the alternative allele frequency. If the frequency column points to the effect allele frequency
-# we will do '1 - effect allele frequency' to calculate the alternative allele frequency
-if (opt$whichfrq == 'effect') {
+# RapidoPGS requires the effect allele frequency. If the frequency column points to the non-effect allele frequency
+# we will do '1 - non-effect allele frequency' to calculate the effect allele frequency
+if (opt$whichfrq == 'noneffect') {
   sumstats$ALT_FREQ <- (1-sumstats$ALT_FREQ)  
-} else if (opt$whichfrq == 'alt') {
-  print('not effect')
+} else if (opt$whichfrq == 'effect') {
+  print('Frequency column points to the effect allele')
 } else {
   print('ERROR: WFRQ parameter not recognized')
   quit(save="no", status=1)
@@ -72,11 +78,47 @@ if (opt$whichfrq == 'effect') {
 # RapidoPGS can only handle autosomes, therefore we remove SNPs on the X and Y chromosomes
 sumstats <- subset(sumstats, CHR!="x" & CHR!="X" & CHR!="y" & CHR!="Y")
 
+# Parse some parameters to the required formats
+if (is.null(opt$samples) || all(opt$samples == "")) {
+  opt$samples <- NULL
+}
+if (is.null(opt$fthrs) || all(opt$fthrs == "")) {
+  opt$fthrs <- NULL
+}
+if (is.null(opt$sbjcol)) {
+  opt$recalc <- NULL
+} 
+else if (all(opt$recalc == "TRUE")) {
+  opt$recalc <- TRUE
+} 
+else if (all(opt$recalc == "FALSE")) {
+  opt$recalc <- FALSE
+}
+if (is.null(opt$ref) || all(opt$ref == "")) {
+  opt$ref <- NULL
+}
+#  pi_i = as.numeric(opt$pii),
+#   sd.prior = as.numeric(opt$prior),
+#   pi_i = NULL,
+#   sd.prior = NULL,
+
 # Compute PGS using GWAS summary statistics
+# PGS <- rapidopgs_single(
+#   data = sumstats,
+#   N = opt$sbjcol,
+#   trait = opt$trait,
+#   build = opt$build,
+
+#   filt_threshold = opt$fthrs,
+#   recalc = opt$recalc,
+#   reference = opt$ref
+# )
+
+
 PGS <- rapidopgs_single(
   data = sumstats,
-  N = opt$sbjcol,
-  trait = "quant",
+  N = opt$samples,
+  trait = opt$trait,
   build = opt$build,
   pi_i = 1e-04,
   sd.prior = 0.15,
@@ -86,5 +128,5 @@ PGS <- rapidopgs_single(
 )
 
 # Write the PGS table to a file so it can be read by PLINK
-export <- PGS[,c("SNPID", "REF", "weight")]
+export <- PGS[,c("SNPID", "REF", "WEIGHT")]
 write.table(export, file=opt$out, row.names=FALSE, sep="\t", quote=FALSE)

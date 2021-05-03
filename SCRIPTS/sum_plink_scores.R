@@ -12,7 +12,7 @@ package.check <- lapply(
   packages,
   FUN = function(x) {
     if (!require(x, character.only = TRUE)) {
-      install.packages(x, dependencies = TRUE)
+      install.packages(x, dependencies = TRUE, repos='http://cran.us.r-project.org')
       try(library(x), silent=TRUE)
     }
   }
@@ -35,7 +35,7 @@ option_list = list(
 opt = parse_args(OptionParser(option_list=option_list))
 
 # Read the sample file to a table
-sumscores <- read.table(samplefile, sep='', header=TRUE)
+sumscores <- read.table(opt$sample, sep='', header=TRUE)
 
 # List all the files containing scores that contribute to the final risk score    
 files <- list.files(path=opt$scoredir, pattern=paste("^", opt$scoreprefix, ".+\\.sscore$", sep=""), full.names=TRUE, recursive=FALSE)

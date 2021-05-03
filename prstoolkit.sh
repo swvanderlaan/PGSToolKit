@@ -6,7 +6,10 @@
 #SBATCH --time=20:00:00                                           # Time limit hrs:min:sec
 #SBATCH --mem=4G	                                              # RAM required per node
 
-set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/UKBB.GWAS1KG.EXOME.CAD.SOFT.META.PublicRelease.300517.rsid.QCd.txt.gz"
+set -- "${@:1}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config"
+# set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/UKBB.GWAS1KG.EXOME.CAD.SOFT.META.PublicRelease.300517.rsid.QCd.txt.gz"
+# set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/tmpbase.txt"
+
 
 # Setting colouring
 NONE='\033[00m'
@@ -85,9 +88,9 @@ script_copyright_message() {
 script_arguments_error() {
 	echoerror "$1" # Additional message
 	echoerror "- Argument #1 is path_to/filename of the configuration file."
-	echoerror "- Argument #2 is path_to/filename of the list of GWAS summary statistics-files with arbitrarily chosen names, path_to, and file-names."
+	# echoerror "- Argument #2 is path_to/filename of the list of GWAS summary statistics-files with arbitrarily chosen names, path_to, and file-names."
 	echoerror ""
-	echoerror "An example command would be: prstoolkit.sh [arg1] [arg2]"
+	echoerror "An example command would be: prstoolkit.sh [arg1]"
 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
  	echo ""
 	script_copyright_message
@@ -128,27 +131,31 @@ TODAY=$(date +"%Y%m%d")
 
 ##########################################################################################
 ### Command-line argument check
-if [[ $# -lt 2 ]]; then 
+if [[ $# -lt 1 ]]; then 
 	echo ""
 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	echoerrorflash "               *** Oh, oh, computer says no! Number of arguments found "$#". ***"
-	echoerror "You must supply [2] arguments when running *** PRSToolKit ***!"
+	echoerror "You must supply [1] argument when running *** PRSToolKit ***!"
 	script_arguments_error
 else
 	echo "These are the "$#" arguments that passed:"
 	echo "The configuration file..................: "$(basename ${1}) # argument 1
-	echo "The GWAS-files file.....................: "$(basename ${2}) # argument 2
+	# echo "The GWAS-files file.....................: "$(basename ${2}) # argument 2
 fi 
 
 ##########################################################################################
 ### Loading command-line arguments and configuration file
 source "$1" # Depends on arg1.
 CONFIGURATIONFILE="$1" # Depends on arg1 -- but also on where it resides!!!
-BASEDATA="$2" # Depends on arg2 -- all the GWAS dataset information
+# BASEDATA="$2" # Depends on arg2 -- all the GWAS dataset information
+
+##########################################################################################
+### Set the output file name
+OUTPUTNAME=${PROJECTNAME}_${PRSMETHOD}_$(date +%Y-%b-%d--%H-%M)_job_${SLURM_JOB_ID}
 
 ##########################################################################################
 ### Parameter validation
-if [[ ${PRSMETHOD} == "PLINK" || ${PRSMETHOD} == "PRSCS" || ${PRSMETHOD} == "LDPRED" || ${PRSMETHOD} == "PRSICE2" || ${PRSMETHOD} == "RAPIDOPGS" ]]; then
+if [[ ${PRSMETHOD} == "PLINK" || ${PRSMETHOD} == "PRSCS" || ${PRSMETHOD} == "LDPRED" || ${PRSMETHOD} == "PRSICE" || ${PRSMETHOD} == "RAPIDOPGS" ]]; then
 	echo ""
 	echo "Calculating Polygenic Risk Scores using ${PRSMETHOD}."
 
@@ -182,7 +189,6 @@ else
 	exit 1
 fi
 
-
 ##########################################################################################
 ### SETTING UP NECESSARY DIRECTORIES
 echo ""
@@ -197,46 +203,44 @@ fi
 OUTPUTDIR=${PROJECTDIR}/${OUTPUTDIRNAME}
 
 echo ""
-echo "Checking for the existence of the subproject directory [ ${SUBPROJECTDIRNAME} ]."
-if [ ! -d ${OUTPUTDIR}/${SUBPROJECTDIRNAME} ]; then
+echo "Checking for the existence of the subproject directory [ ${SUBPROJECT_DIR_NAME} ]."
+if [ ! -d ${OUTPUTDIR}/${SUBPROJECT_DIR_NAME} ]; then
 	echo "> Subproject directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${OUTPUTDIR}/${SUBPROJECTDIRNAME}
+	mkdir -v ${OUTPUTDIR}/${SUBPROJECT_DIR_NAME}
 else
 	echo "> Subproject directory already exists."
 fi
-SUBPROJECTDIR=${OUTPUTDIR}/${SUBPROJECTDIRNAME}
-
-# echo ""
-# echo "Checking for the existence of the parsed data directory [ ${SUBPROJECTDIRNAME}/PARSED ]."
-# if [ ! -d ${SUBPROJECTDIR}/PARSED ]; then
-# 	echo "> Parsed data directory doesn't exist - Mr. Bourne will create it for you."
-# 	mkdir -v ${SUBPROJECTDIR}/PARSED
-# else
-# 	echo "> Parsed data directory already exists."
-# fi
-# PARSEDDIR=${SUBPROJECTDIR}/PARSED
+SUBPROJECTDIR=${OUTPUTDIR}/${SUBPROJECT_DIR_NAME}
 
 echo ""
-echo "Checking for the existence of the working directory [ ${PROJECTDIR}/${TEMPDIRNAME} ]."
-if [ ! -d ${PROJECTDIR}/${TEMPDIRNAME} ]; then
-	echo "> ${TEMPDIRNAME} directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${TEMPDIRNAME}
+echo "Checking for the existence of the ${LOG_DIR_NAME} directory [ ${PROJECTDIR}/${LOG_DIR_NAME} ]."
+if [ ! -d ${PROJECTDIR}/${LOG_DIR_NAME} ]; then
+	echo "> ${LOG_DIR_NAME} directory doesn't exist - Mr. Bourne will create it for you."
+	mkdir -v ${PROJECTDIR}/${LOG_DIR_NAME}
 else
-	echo "> ${TEMPDIRNAME} directory already exists."
+	echo "> ${LOG_DIR_NAME} directory already exists."
 fi
-PRSDIR=${PROJECTDIR}/${TEMPDIRNAME}
+LOGDIR=${PROJECTDIR}/${LOG_DIR_NAME}
 
 echo ""
-echo "Checking for the existence of the ${LOGDIRNAME} directory [ ${PROJECTDIR}/${LOGDIRNAME} ]."
-if [ ! -d ${PROJECTDIR}/${LOGDIRNAME} ]; then
-	echo "> ${LOGDIRNAME} directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${LOGDIRNAME}
+echo "Checking for the existence of the main working directory [ ${PROJECTDIR}/${MAIN_WORKDIR_NAME} ]."
+if [ ! -d ${PROJECTDIR}/${MAIN_WORKDIR_NAME} ]; then
+	echo "> ${MAIN_WORKDIR_NAME} directory doesn't exist - Mr. Bourne will create it for you."
+	mkdir -v ${PROJECTDIR}/${MAIN_WORKDIR_NAME}
 else
-	echo "> ${LOGDIRNAME} directory already exists."
+	echo "> ${MAIN_WORKDIR_NAME} directory already exists."
 fi
-LOGDIR=${PROJECTDIR}/${LOGDIRNAME}
+MAIN_WORKDIR=${PROJECTDIR}/${MAIN_WORKDIR_NAME}
 
-OUTPUTNAME=${PROJECTNAME}_${PRSMETHOD}_$(date +%Y-%b-%d--%H-%M)
+echo ""
+echo "Checking for the existence of the working directory for this project [ ${MAIN_WORKDIR}/${OUTPUTNAME} ]."
+if [ ! -d ${MAIN_WORKDIR}/${OUTPUTNAME} ]; then
+	echo "> ${OUTPUTNAME} doesn't exist - Mr. Bourne will create it for you."
+	mkdir -v ${MAIN_WORKDIR}/${OUTPUTNAME}
+else
+	echo "> ${OUTPUTNAME} already exists."
+fi
+PRSDIR=${MAIN_WORKDIR}/${OUTPUTNAME}
 
 echo ""
 echo "The scene is properly set, and directories are created! 🖖"
@@ -246,18 +250,11 @@ echo "Validation data directory.......................................: "${VALID
 echo "Main directory..................................................: "${PROJECTDIR}
 echo "Main analysis output directory..................................: "${OUTPUTDIR}
 echo "Subproject's analysis output directory..........................: "${SUBPROJECTDIR}
-# echo "Parsed data directory...........................................: "${PARSEDDIR}
-echo "Working directory...............................................: "${PRSDIR}
 echo "Log directory...................................................: "${LOGDIR}
-echo "We are processing these GWAS-summary statistics(s)..............: "${BASEDATA}
-
+echo "Main working directory..........................................: "${MAIN_WORKDIR}
+echo "Working directory for this project..............................: "${PRSDIR}
 echo ""
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-
-# check_slurm_codes() {
-# 	echo "${CURRENT_JOBID}"
-# 	echo "$(sacct -j ${CURRENT_JOBID})"
-# }
 
 QC_DEPENDENCY=""
 if [[ ${QC} == "YES" ]]; then
@@ -274,15 +271,17 @@ if [[ ${QC} == "YES" ]]; then
 
 	# Start the quality control job
 	QC_SUMMARY_FILE=${PRSDIR}/${OUTPUTNAME}_QC_results.txt
-	QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.R -b ${BASEDATA} -s ${STATS_FILE} -o ${PRSDIR}/QCd_basefile.txt.gz -m ${MAF} -i ${INFO} -a ${BF_SNP_COL} -d ${STATS_ID_COL} -c ${STATS_MAF_COL} -t ${STATS_INFO_COL} -r ${QC_SUMMARY_FILE})
-	QC_DEPENDENCY="--dependency=afterany:${QC_JOBID}"
-	
+	QC_OUTPUT=${PRSDIR}/QCd_basefile.txt.gz
+	# QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.R -b ${BASEDATA} -s ${STATS_FILE} -o ${PRSDIR}/QCd_basefile.txt.gz -m ${MAF} -i ${INFO} -a ${BF_ID_COL} -d ${STATS_ID_COL} -c ${STATS_MAF_COL} -t ${STATS_INFO_COL} -r ${QC_SUMMARY_FILE})
+	QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.py -b ${BASEDATA} -i ${BF_ID_COL} -s ${STATS_FILE} -a ${STATS_ID_COL} -c ${STATS_MAF_COL} -d ${STATS_INFO_COL} -m ${MAF} -n ${INFO} -o ${QC_OUTPUT} -r ${QC_SUMMARY_FILE})
+	QC_DEPENDENCY="--dependency=afterok:${QC_JOBID}"
+
 	echo ""
 	cat ${QC_SUMMARY_FILE}
 	echo ""
 
 	# We will now use the quality controlled file as our new base file
-	BASEDATA=${PRSDIR}/QCd_basefile.txt.gz
+	BASEDATA=QC_OUTPUT
 
 elif [[ ${QC} == "NO" ]]; then
 	echo ""
@@ -309,59 +308,85 @@ if [[ ${PRSMETHOD} == "PLINK" ]]; then
 
 	# Calculate the effect sizes for each chromosome
 	### TODO: make this run in parallel and make it prettier
-	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},PLINK_REF_POS=${PLINK_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},PLINK_VARIANT_ID_COL=${PLINK_VARIANT_ID_COL},PLINK_ALLELE_COL=${PLINK_ALLELE_COL},PLINK_SCORE_COL=${PLINK_SCORE_COL},PLINK_HEADER=${PLINK_HEADER},PLINK_SETTINGS=${PLINK_SETTINGS} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
-	PLINKSCORE_DEPENDENCY="--dependency=afterany:${PLINKSCORE_JOBID}"
+	PLINK_HEADER="header"
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${BF_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},SNP_COL=${BF_SNP_COL},EFFECT_COL=${BF_EFFECT_COL},SCORE_COL=${BF_STAT_COL},PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
 
 	# Sum the effect sizes to calculate the final score
-	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
 
 elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
-	# source "${PRSTOOLKITSCRIPTS}/prscs.sh"
-	echo "Not implemented yet!"
-	 
+
+	# Parse the base file to PRS-CS format (and also unzip it)
+	PARSED_BASEDATA=${PRSDIR}/basefile_PRScs_format.txt
+	PRSCS_format_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs_format ${QC_DEPENDENCY} --time ${RUNTIME_PRSCS_format} --mem ${MEMORY_PRSCS_format} -o ${LOGDIR}/${OUTPUTNAME}_PRScs_format.log ${PRSTOOLKITSCRIPTS}/basefile_PRScs_formatter.R -i ${BASEDATA} -o ${PARSED_BASEDATA} -d ${BF_ID_COL} -r ${BF_EFFECT_COL} -a ${BF_NON_EFFECT_COL} -z ${BF_STAT} -m ${BF_STAT_COL} -v ${BF_PVALUE_COL})
+	PRSCS_format_DEPENDENCY="--dependency=afterok:${PRSCS_format_JOBID}"
+
+	PARSED_BASEDATA="/hpc/dhl_ec/aligterink/ProjectFiles/tmp/CAD_PRSCS_2021-Apr-25--16-31_job_4742573/basefile_PRScs_format.txt"
+	WEIGHTS_FILE=${PRSDIR}/PRScs_weights
+
+	PRSCS_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs ${PRSCS_format_DEPENDENCY} --time ${RUNTIME_PRSCS} --mem ${MEMORY_PRSCS} -o ${LOGDIR}/${OUTPUTNAME}_PRScs.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},SAMPLE_FILE=${SAMPLE_FILE},BIM_FILE_AVAILABLE=${BIM_FILE_AVAILABLE},BIM_FILE_PATH=${BIM_FILE_PATH},PRSDIR=${PRSDIR},BF_REF_POS=${BF_REF_POS},BF_SAMPLE_SIZE=${BF_SAMPLE_SIZE},PLINK=${PLINK},PYTHONPATH=${PYTHONPATH},LDDATA=${LDDATA},PRSCS=${PRSCS},PARSED_BASEDATA=${PARSED_BASEDATA},WEIGHTS_FILE=${WEIGHTS_FILE} ${PRSTOOLKITSCRIPTS}/prscs.sh)
+	PRSCS_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
+
+	# Calculate individual scores using PLINK
+	PLINK_HEADER=""
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PRSCS_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${BF_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${WEIGHTS_FILE},SNP_COL=SNPID,EFFECT_COL=REF,SCORE_COL=WEIGHT,PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
+
+	# # Sum the effect sizes to calculate the final score
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
+
 elif [[ ${PRSMETHOD} == "LDPRED" ]]; then
-	echo "Not implemented yet!"
+	cd ${PRSDIR}
+	LDPRED_JOBID=$(sbatch --parsable --wait --job-name=PRS_LDPRED ${QC_DEPENDENCY} --time ${RUNTIME_LDPRED} --mem ${MEMORY_LDPRED} -o ${LOGDIR}/${OUTPUTNAME}_LDPRED.log ${PRSTOOLKITSCRIPTS}/LDpred2.R)
+	# echo "not implemented"
 
-elif [[ ${PRSMETHOD} == "PRSICE2" ]]; then
-	# source "${PRSTOOLKITSCRIPTS}/prsice.sh"
-	echo "Not implemented yet!"
 
+elif [[ ${PRSMETHOD} == "PRSICE" ]]; then
+	PRSICE_OUTPUTNAME=${PRSDIR}/out
+	PRSICE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRSICE ${QC_DEPENDENCY} --time ${RUNTIME_PRSICE} --mem ${MEMORY_PRSICE} -o ${LOGDIR}/${OUTPUTNAME}_PRSICE.log --export=ALL,RSCRIPT=${RSCRIPT},PRSICE2_R=${PRSICE2_R},PRSICE2_SH=${PRSICE2_SH},PRSDIR=${PRSDIR},PRSICE_BARLEVELS=${PRSICE_BARLEVELS},BASEDATA=${BASEDATA},TARGETDATA=${TARGETDATA},PRSICE_THREADS=${PRSICE_THREADS},BF_STAT=${BF_STAT},BF_TARGET_TYPE=${BF_TARGET_TYPE},BF_ID_COL=${BF_ID_COL},BF_CHR_COL=${BF_CHR_COL},BF_POS_COL=${BF_POS_COL},BF_EFFECT_COL=${BF_EFFECT_COL},BF_NON_EFFECT_COL=${BF_NON_EFFECT_COL},BF_STAT_COL=${BF_STAT_COL},BF_PVALUE_COL=${BF_PVALUE_COL},PHENOTYPEFILE=${SAMPLE_FILE},DUMMY_PHENOTYPE=${DUMMY_PHENOTYPE},PRSICE_PLOTTING="${PRSICE_PLOTTING}",PRSICE_SETTINGS="${PRSICE_SETTINGS}",PRSICE_OUTPUTNAME=${PRSICE_OUTPUTNAME} ${PRSTOOLKITSCRIPTS}/prsice.sh)
+	echo "sbatch --parsable --wait --job-name=PRS_PRSICE ${QC_DEPENDENCY} --time ${RUNTIME_PRSICE} --mem ${MEMORY_PRSICE} -o ${LOGDIR}/${OUTPUTNAME}_PRSICE.log --export=ALL,RSCRIPT=${RSCRIPT},PRSICE2_R=${PRSICE2_R},PRSICE2_SH=${PRSICE2_SH},PRSDIR=${PRSDIR},PRSICE_BARLEVELS=${PRSICE_BARLEVELS},BASEDATA=${BASEDATA},TARGETDATA=${TARGETDATA},PRSICE_THREADS=${PRSICE_THREADS},BF_STAT=${BF_STAT},BF_TARGET_TYPE=${BF_TARGET_TYPE},BF_ID_COL=${BF_ID_COL},BF_CHR_COL=${BF_CHR_COL},BF_POS_COL=${BF_POS_COL},BF_EFFECT_COL=${BF_EFFECT_COL},BF_NON_EFFECT_COL=${BF_NON_EFFECT_COL},BF_STAT_COL=${BF_STAT_COL},BF_PVALUE_COL=${BF_PVALUE_COL},PHENOTYPEFILE=${SAMPLE_FILE},DUMMY_PHENOTYPE=${DUMMY_PHENOTYPE},PRSICE_PLOTTING="${PRSICE_PLOTTING}",PRSICE_SETTINGS="${PRSICE_SETTINGS}",PRSICE_OUTPUTNAME=${PRSICE_OUTPUTNAME} ${PRSTOOLKITSCRIPTS}/prsice.sh"
 
 elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
 
-	#Set PLINK parameters
-	PLINK_VARIANT_ID_COL=1
-	PLINK_ALLELE_COL=2
-	PLINK_SCORE_COL=3
-	PLINK_HEADER="header"
-	WEIGHTS_FILE="${PRSDIR}/${OUTPUTNAME}_weights.txt"
+	# File for storing the effect sizes computed by Rapido
+	WEIGHTS_FILE="${PRSDIR}/Rapido_weights.txt"
 
 	# Calculate weights using RapidoPGS
-	RAPIDO_JOBID=$(sbatch --parsable --wait --job-name=PRS_RAPIDO ${QC_DEPENDENCY} --time ${RUNTIME_RAPIDO} --mem ${MEMORY_RAPIDO} -o ${LOGDIR}/${OUTPUTNAME}_RAPIDO.log ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${WEIGHTS_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_SNP_COL} -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_A1_COL} -a ${BF_A2_COL} -f ${BF_FRQ_COL} -w ${BF_WFRQ} -m ${BF_MSR_COL} -e ${BF_SE_COL} -s ${BF_SBJ_COL})
-	RAPIDO_DEPENDENCY="--dependency=afterany:${RAPIDO_JOBID}"
+	RAPIDO_JOBID=$(sbatch --parsable --wait --job-name=PRS_RAPIDO ${QC_DEPENDENCY} --time ${RUNTIME_RAPIDO} --mem ${MEMORY_RAPIDO} -o ${LOGDIR}/${OUTPUTNAME}_RAPIDO.log ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${WEIGHTS_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_SNP_COL} -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_NON_EFFECT_COL} -a ${BF_EFFECT_COL} -f ${BF_FRQ_COL} -w ${BF_WFRQ} -m ${BF_STAT_COL} -e ${BF_SE_COL} -s ${BF_SAMPLE_SIZE} -l ${RP_trait})
+	RAPIDO_DEPENDENCY="--dependency=afterok:${RAPIDO_JOBID}"
 	
 	# Calculate individual scores using PLINK
-	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${RAPIDO_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},PLINK_REF_POS=${PLINK_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},PLINK_VARIANT_ID_COL=${PLINK_VARIANT_ID_COL},PLINK_ALLELE_COL=${PLINK_ALLELE_COL},PLINK_SCORE_COL=${PLINK_SCORE_COL},PLINK_HEADER=${PLINK_HEADER},PLINK_SETTINGS=${PLINK_SETTINGS} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
-	PLINKSCORE_DEPENDENCY="--dependency=afterany:${PLINKSCORE_JOBID}"
+	PLINK_HEADER="header"
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${RAPIDO_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${BF_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${WEIGHTS_FILE},SNP_COL=SNPID,EFFECT_COL=REF,SCORE_COL=WEIGHT,PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
 
 	# Sum the effect sizes to calculate the final score
-	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f ${SAMPLE_FID_COL} -i ${SAMPLE_IID_COL} -d ${PRSDIR} -p ${PLINKSCORE_PREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
 
 fi
 
-# Make all created files accessible
-# for file in ${PRSDIR}/*; do
-#     # readlink -f $file
-# 	chmod -Rv a+rwx $file
-#     #chmod -Rv a+rwx ${file%.vcf.gz}.bgen
-# done
 echo ""
 echo "${PRSMETHOD} risk score calculation has finished."
+echo ""
+
+if [[ ${KEEP_TEMP_FILES} == "YES" ]]; then
+	echo "KEEP_TEMP_FILES parameter is active, temporary files stored in [ ${PRSDIR} ] will not be removed."
+
+elif [[ ${KEEP_TEMP_FILES} == "NO" ]]; then
+	echo "KEEP_TEMP_FILES parameter is inactive, temporary files stored in [ ${PRSDIR} ] will now be removed."
+	### TODO: insert delete function here
+
+else
+	echo "KEEP_TEMP_FILES parameter not recognized, temporary files stored in [ ${PRSDIR} ] will not be removed."
+
+fi
+
 echo ""
 echocyan "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... 🖖 "
 
-script_copyright_message
+# script_copyright_message
 
 
 

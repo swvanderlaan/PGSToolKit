@@ -1,3 +1,5 @@
+#!/hpc/local/CentOS7/dhl_ec/software/R-3.6.3/R-3.6.3/bin/Rscript --vanilla
+
 # R script for parsing the GWAS summary file to the default PRS-CS format.
 # More on the PRS-CS format can be found here: https://github.com/getian107/PRScs
 
@@ -10,7 +12,7 @@ package.check <- lapply(
   packages,
   FUN = function(x) {
     if (!require(x, character.only = TRUE)) {
-      install.packages(x, dependencies = TRUE)
+      install.packages(x, dependencies = TRUE, repos='http://cran.us.r-project.org')
       try(library(x), silent=TRUE)
     }
   }
@@ -33,15 +35,15 @@ opt = parse_args(OptionParser(option_list=option_list))
 print(opt)
 
 # Read the GWAS summary file to a table
-sumstats <- read.table(opt$input, sep='\t', header=TRUE)
+sumstats <- read.table(opt$input, sep='\t', header=TRUE, check.names=FALSE)
 
 # Change the column names to the required format of PRS-CS
 colnames(sumstats)[colnames(sumstats) == opt$idcol] <- "SNP"
 colnames(sumstats)[colnames(sumstats) == opt$refcol] <- "A1"
 colnames(sumstats)[colnames(sumstats) == opt$altcol] <- "A2"
-colnames(sumstats)[colnames(sumstats) == opt$measurecol] <- opt$measure
+colnames(sumstats)[colnames(sumstats) == opt$measurecol] <- toupper(opt$measure)
 colnames(sumstats)[colnames(sumstats) == opt$pvaluecol] <- "P"
 
-# Write the PGS table to a file so it can be read by PLINK
-export <- sumstats[,c("SNP", "A1", "A2", opt$measure, "P")]
+# Write the PGS table to a file so it can be read by PRS-CS
+export <- sumstats[,c("SNP", "A1", "A2", toupper(opt$measure), "P")]
 write.table(export, file=opt$output, row.names=FALSE, sep="\t", quote=FALSE)

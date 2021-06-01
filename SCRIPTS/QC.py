@@ -30,14 +30,14 @@ with gzip.open(args['base'], 'rb') as f:
 
     while True:
         try:
-            # Count the amount of variants in the base file
-            base_variants_count += 1
-
             # for UKB CAD file
-            base_variant_ids.add(f.readline().decode("utf-8").split()[0].split('_')[0])
+            # base_variant_ids.add(f.readline().decode("utf-8").split()[0].split('_')[0])
 
             # Add the IDs of the variants in the base file to a set
-            # base_variant_ids.add(f.readline().decode("utf-8").split()[base_id_col_index])
+            base_variant_ids.add(f.readline().decode("utf-8").split()[base_id_col_index])
+            
+            # Count the amount of variants in the base file
+            base_variants_count += 1
         except:
             break
 
@@ -51,6 +51,10 @@ with gzip.open(args['stats'], 'rb') as f:
     stats_id_col_index = header.index(args['stats_idcol'])
     stats_maf_col_index = header.index(args['stats_mafcol'])
     stats_info_col_index = header.index(args['stats_infocol'])
+
+    print(stats_id_col_index)
+    print(stats_maf_col_index)
+    print(stats_info_col_index)
 
     while True:
         try:
@@ -68,11 +72,10 @@ with gzip.open(args['stats'], 'rb') as f:
 
                     # Count the amount of times a variant was removed from the list
                     removed_count += 1
-
         except:
             break
 
-# Read the base file again, this time to write the 
+# Read the base file again, this time to write the filtered variants to a file
 with gzip.open(args['base'], 'rb') as f:
 
     with gzip.open(args['out'], 'wb') as o:
@@ -89,22 +92,19 @@ with gzip.open(args['base'], 'rb') as f:
                 line = f.readline().decode("utf-8")
                 
                 # for UKB CAD file
-                if line.split()[0].split('_')[0] in base_variant_ids:
-                    o.write(line.encode())
+                # if line.split()[0].split('_')[0] in base_variant_ids:
+                #     o.write(line.encode())
                 
-                # if line.split()[base_id_col_index] in base_variant_ids:
-                #     o.write(line)
+                if line.split()[base_id_col_index] in base_variant_ids:
+                    o.write(line.encode())
             except:
                 break
 
 # Write a summary of the results to a file
 with open(args['rsum'], 'w') as f:
-    f.write(str(base_variants_count) + ' variants found in basefile')
-    f.write('\t- unique variants: ' + str(base_unique_IDs_count))
-    f.write('\t- duplicate variants: ' + str(base_variants_count - base_unique_IDs_count))
-    f.write('\n')
-    f.write(str(stats_occurrence_count) + ' / ' + str(base_unique_IDs_count) + ' unique variants appeared in the stats file')
-    f.write('\n')
-    f.write(str(removed_count) + ' / ' + str(stats_occurrence_count) + ' unique variants that appeared in the stats file did not meet the thresholds')
-    f.write(str(stats_occurrence_count - removed_count) + ' / ' + str(stats_occurrence_count) + ' unique variants that appeared in the stats file met the thresholds')
-    f.write('\n')
+    f.write(str(base_variants_count) + ' variants found in basefile\n')
+    f.write('\t- unique variants: ' + str(base_unique_IDs_count) + '\n')
+    f.write('\t- duplicate variants: ' + str(base_variants_count - base_unique_IDs_count) + '\n\n')
+    f.write(str(stats_occurrence_count) + ' / ' + str(base_unique_IDs_count) + ' unique variants appeared in the stats file\n')
+    f.write(str(removed_count) + ' / ' + str(stats_occurrence_count) + ' unique variants that appeared in the stats file did not meet the thresholds\n')
+    f.write(str(stats_occurrence_count - removed_count) + ' / ' + str(stats_occurrence_count) + ' unique variants that appeared in the stats file met the thresholds\n\n')

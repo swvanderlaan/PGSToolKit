@@ -3,7 +3,7 @@
 #SBATCH --output=/home/dhl_ec/aligterink/logs/batchjob_%j.log     # Standard output and error log
 #SBATCH --mail-user=a.j.ligterink@umcutrecht.nl                   # Mail
 #SBATCH --mail-type=NONE		                                  # Mail events (NONE, BEGIN, END, FAIL, ALL)
-#SBATCH --time=20:00:00                                           # Time limit hrs:min:sec
+#SBATCH --time=50:00:00                                           # Time limit hrs:min:sec
 #SBATCH --mem=4G	                                              # RAM required per node
 
 set -- "${@:1}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config"
@@ -105,7 +105,7 @@ echobold "* Version:      v1.0.1"
 echobold ""
 echobold "* Last update:  2021-04-07"
 echobold "* Written by:   Sander W. van der Laan | s.w.vanderlaan@gmail.com"
-echobold "				  Anton Ligterink | anton.ligterink@gmail.com"
+echobold "	       Anton Ligterink | anton.ligterink@gmail.com"
 echobold "* Description:  Prepare files and calculate polygenic scores. This tool will do the following:"
 echobold "                - Perform quality control on GWAS summary data"
 echobold "                - Calculate polygenic risk scores from GWAS summary statistcs (LDpred/PRSICE/RapidoPGS/PRScs)"
@@ -155,7 +155,7 @@ OUTPUTNAME=${PROJECTNAME}_${PRSMETHOD}_$(date +%Y-%b-%d--%H-%M)_job_${SLURM_JOB_
 
 ##########################################################################################
 ### Parameter validation
-if [[ ${PRSMETHOD} == "PLINK" || ${PRSMETHOD} == "PRSCS" || ${PRSMETHOD} == "LDPRED" || ${PRSMETHOD} == "PRSICE" || ${PRSMETHOD} == "RAPIDOPGS" ]]; then
+if [[ ${PRSMETHOD} == "PLINK" || ${PRSMETHOD} == "PRSCS" || ${PRSMETHOD} == "LDPRED" || ${PRSMETHOD} == "PRSICE" || ${PRSMETHOD} == "RAPIDOPGS" || ${PRSMETHOD} == "NONE" ]]; then
 	echo ""
 	echo "Calculating Polygenic Risk Scores using ${PRSMETHOD}."
 
@@ -256,6 +256,22 @@ echo "Working directory for this project..............................: "${PRSDI
 echo ""
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
+echo ""
+# SAVE_CONFIG indicates whether to save the configuration file along with the results
+if [[ ${SAVE_CONFIG} == "TRUE" ]]; then	
+	echo "SAVE_CONFIG parameter is active, the configuration file will be saved in [ ${SUBPROJECTDIR}/${OUTPUTNAME}.config ]."
+	cp ${CONFIGURATIONFILE} ${SUBPROJECTDIR}/${OUTPUTNAME}.config
+
+elif [[ ${SAVE_CONFIG} == "FALSE" || ${SAVE_CONFIG} == "" ]]; then
+	true
+
+else
+	echo "SAVE_CONFIG parameter not recognized, the configuration file will be saved in [ ${SUBPROJECTDIR}/${OUTPUTNAME}.config ]."
+	cp ${CONFIGURATIONFILE} ${SUBPROJECTDIR}/${OUTPUTNAME}.config
+
+fi
+echo ""
+
 QC_DEPENDENCY=""
 if [[ ${QC} == "YES" ]]; then
 
@@ -281,7 +297,7 @@ if [[ ${QC} == "YES" ]]; then
 	echo ""
 
 	# We will now use the quality controlled file as our new base file
-	BASEDATA=QC_OUTPUT
+	BASEDATA=${QC_OUTPUT}
 
 elif [[ ${QC} == "NO" ]]; then
 	echo ""
@@ -307,13 +323,13 @@ RESULTS_FILE=${SUBPROJECTDIR}/${OUTPUTNAME}_results.txt
 if [[ ${PRSMETHOD} == "PLINK" ]]; then
 
 	# Calculate the effect sizes for each chromosome
-	### TODO: make this run in parallel and make it prettier
-	PLINK_HEADER="header"
-	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${BF_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},SNP_COL=${BF_SNP_COL},EFFECT_COL=${BF_EFFECT_COL},SCORE_COL=${BF_STAT_COL},PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	### TODO: make this run in parallel
+	PLINK_HEADER="TRUE"
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${VAL_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},SNP_COL=${BF_ID_COL},EFFECT_COL=${BF_EFFECT_COL},SCORE_COL=${BF_STAT_COL},PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
 	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
 
 	# Sum the effect sizes to calculate the final score
-	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -r "SCORE1_SUM" -o ${RESULTS_FILE})
 
 elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
 
@@ -322,30 +338,31 @@ elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
 	PRSCS_format_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs_format ${QC_DEPENDENCY} --time ${RUNTIME_PRSCS_format} --mem ${MEMORY_PRSCS_format} -o ${LOGDIR}/${OUTPUTNAME}_PRScs_format.log ${PRSTOOLKITSCRIPTS}/basefile_PRScs_formatter.R -i ${BASEDATA} -o ${PARSED_BASEDATA} -d ${BF_ID_COL} -r ${BF_EFFECT_COL} -a ${BF_NON_EFFECT_COL} -z ${BF_STAT} -m ${BF_STAT_COL} -v ${BF_PVALUE_COL})
 	PRSCS_format_DEPENDENCY="--dependency=afterok:${PRSCS_format_JOBID}"
 
-	PARSED_BASEDATA="/hpc/dhl_ec/aligterink/ProjectFiles/tmp/CAD_PRSCS_2021-Apr-25--16-31_job_4742573/basefile_PRScs_format.txt"
-	WEIGHTS_FILE=${PRSDIR}/PRScs_weights
+	WEIGHTS_FILE=${PRSDIR}/PRScs_weights_combined.txt
 
-	PRSCS_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs ${PRSCS_format_DEPENDENCY} --time ${RUNTIME_PRSCS} --mem ${MEMORY_PRSCS} -o ${LOGDIR}/${OUTPUTNAME}_PRScs.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},SAMPLE_FILE=${SAMPLE_FILE},BIM_FILE_AVAILABLE=${BIM_FILE_AVAILABLE},BIM_FILE_PATH=${BIM_FILE_PATH},PRSDIR=${PRSDIR},BF_REF_POS=${BF_REF_POS},BF_SAMPLE_SIZE=${BF_SAMPLE_SIZE},PLINK=${PLINK},PYTHONPATH=${PYTHONPATH},LDDATA=${LDDATA},PRSCS=${PRSCS},PARSED_BASEDATA=${PARSED_BASEDATA},WEIGHTS_FILE=${WEIGHTS_FILE} ${PRSTOOLKITSCRIPTS}/prscs.sh)
-	PRSCS_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
+	PRSCS_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs ${PRSCS_format_DEPENDENCY} --time ${RUNTIME_PRSCS} --mem ${MEMORY_PRSCS} -o ${LOGDIR}/${OUTPUTNAME}_PRScs.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},SAMPLE_FILE=${SAMPLE_FILE},BIM_FILE_AVAILABLE=${BIM_FILE_AVAILABLE},BIM_FILE_PATH=${BIM_FILE_PATH},PRSDIR=${PRSDIR},REF_POS=${VAL_REF_POS},BF_SAMPLE_SIZE=${BF_SAMPLE_SIZE},PLINK=${PLINK},PYTHONPATH=${PYTHONPATH},LDDATA=${LDDATA},PRSCS=${PRSCS},PARSED_BASEDATA=${PARSED_BASEDATA},WEIGHTS_FILE=${WEIGHTS_FILE} ${PRSTOOLKITSCRIPTS}/prscs.sh)
+	PRSCS_DEPENDENCY="--dependency=afterok:${PRSCS_JOBID}"
 
 	# Calculate individual scores using PLINK
-	PLINK_HEADER=""
-	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PRSCS_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${BF_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${WEIGHTS_FILE},SNP_COL=SNPID,EFFECT_COL=REF,SCORE_COL=WEIGHT,PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINK_HEADER="FALSE"
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${PRSCS_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${VAL_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${WEIGHTS_FILE},SNP_COL=2,EFFECT_COL=4,SCORE_COL=6,PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
 	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
 
 	# # Sum the effect sizes to calculate the final score
-	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -r "SCORE1_SUM" -o ${RESULTS_FILE})
 
 elif [[ ${PRSMETHOD} == "LDPRED" ]]; then
-	cd ${PRSDIR}
-	LDPRED_JOBID=$(sbatch --parsable --wait --job-name=PRS_LDPRED ${QC_DEPENDENCY} --time ${RUNTIME_LDPRED} --mem ${MEMORY_LDPRED} -o ${LOGDIR}/${OUTPUTNAME}_LDPRED.log ${PRSTOOLKITSCRIPTS}/LDpred2.R)
-	# echo "not implemented"
-
+	# cd ${PRSDIR}
+	# ldpred_cpus=12
+	# LDPRED_JOBID=$(sbatch --parsable --wait --job-name=PRS_LDPRED ${QC_DEPENDENCY} --time ${RUNTIME_LDPRED} --mem ${MEMORY_LDPRED} -c ${ldpred_cpus} -o ${LOGDIR}/${OUTPUTNAME}_LDPRED.log ${PRSTOOLKITSCRIPTS}/LDpred2.R)
+	echo "not implemented"
 
 elif [[ ${PRSMETHOD} == "PRSICE" ]]; then
 	PRSICE_OUTPUTNAME=${PRSDIR}/out
-	PRSICE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRSICE ${QC_DEPENDENCY} --time ${RUNTIME_PRSICE} --mem ${MEMORY_PRSICE} -o ${LOGDIR}/${OUTPUTNAME}_PRSICE.log --export=ALL,RSCRIPT=${RSCRIPT},PRSICE2_R=${PRSICE2_R},PRSICE2_SH=${PRSICE2_SH},PRSDIR=${PRSDIR},PRSICE_BARLEVELS=${PRSICE_BARLEVELS},BASEDATA=${BASEDATA},TARGETDATA=${TARGETDATA},PRSICE_THREADS=${PRSICE_THREADS},BF_STAT=${BF_STAT},BF_TARGET_TYPE=${BF_TARGET_TYPE},BF_ID_COL=${BF_ID_COL},BF_CHR_COL=${BF_CHR_COL},BF_POS_COL=${BF_POS_COL},BF_EFFECT_COL=${BF_EFFECT_COL},BF_NON_EFFECT_COL=${BF_NON_EFFECT_COL},BF_STAT_COL=${BF_STAT_COL},BF_PVALUE_COL=${BF_PVALUE_COL},PHENOTYPEFILE=${SAMPLE_FILE},DUMMY_PHENOTYPE=${DUMMY_PHENOTYPE},PRSICE_PLOTTING="${PRSICE_PLOTTING}",PRSICE_SETTINGS="${PRSICE_SETTINGS}",PRSICE_OUTPUTNAME=${PRSICE_OUTPUTNAME} ${PRSTOOLKITSCRIPTS}/prsice.sh)
-	echo "sbatch --parsable --wait --job-name=PRS_PRSICE ${QC_DEPENDENCY} --time ${RUNTIME_PRSICE} --mem ${MEMORY_PRSICE} -o ${LOGDIR}/${OUTPUTNAME}_PRSICE.log --export=ALL,RSCRIPT=${RSCRIPT},PRSICE2_R=${PRSICE2_R},PRSICE2_SH=${PRSICE2_SH},PRSDIR=${PRSDIR},PRSICE_BARLEVELS=${PRSICE_BARLEVELS},BASEDATA=${BASEDATA},TARGETDATA=${TARGETDATA},PRSICE_THREADS=${PRSICE_THREADS},BF_STAT=${BF_STAT},BF_TARGET_TYPE=${BF_TARGET_TYPE},BF_ID_COL=${BF_ID_COL},BF_CHR_COL=${BF_CHR_COL},BF_POS_COL=${BF_POS_COL},BF_EFFECT_COL=${BF_EFFECT_COL},BF_NON_EFFECT_COL=${BF_NON_EFFECT_COL},BF_STAT_COL=${BF_STAT_COL},BF_PVALUE_COL=${BF_PVALUE_COL},PHENOTYPEFILE=${SAMPLE_FILE},DUMMY_PHENOTYPE=${DUMMY_PHENOTYPE},PRSICE_PLOTTING="${PRSICE_PLOTTING}",PRSICE_SETTINGS="${PRSICE_SETTINGS}",PRSICE_OUTPUTNAME=${PRSICE_OUTPUTNAME} ${PRSTOOLKITSCRIPTS}/prsice.sh"
+	PRSICE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRSICE ${QC_DEPENDENCY} --time ${RUNTIME_PRSICE} --mem ${MEMORY_PRSICE} -c ${PRSICE_CPUS} -o ${LOGDIR}/${OUTPUTNAME}_PRSICE.log --export=ALL,RSCRIPT=${RSCRIPT},PRSICE2_R=${PRSICE2_R},PRSICE2_SH=${PRSICE2_SH},PRSDIR=${PRSDIR},BASEDATA=${BASEDATA},TARGETDATA=${VALIDATIONDATA}/${VALIDATIONPREFIX},BF_STAT=${BF_STAT},PRSICE_PHENOTYPE_BINARY=${PRSICE_PHENOTYPE_BINARY},BF_ID_COL=${BF_ID_COL},BF_CHR_COL=${BF_CHR_COL},BF_POS_COL=${BF_POS_COL},BF_EFFECT_COL=${BF_EFFECT_COL},BF_NON_EFFECT_COL=${BF_NON_EFFECT_COL},BF_STAT_COL=${BF_STAT_COL},BF_PVALUE_COL=${BF_PVALUE_COL},PHENOTYPEFILE=${SAMPLE_FILE},PRSICE_PHENOTYPE=${PRSICE_PHENOTYPE},PRSICE_CLUMP_KB=${PRSICE_CLUMP_KB},PRSICE_CLUMP_P=${PRSICE_CLUMP_P},PRSICE_CLUMP_R2=${PRSICE_CLUMP_R2},PRSICE_PERM=${PRSICE_PERM},PRSICE_THREADS=${PRSICE_THREADS},PRSICE_SETTINGS="${PRSICE_SETTINGS}",PRSICE_OUTPUTNAME=${PRSICE_OUTPUTNAME},LDDATA="${LDDATA}",PRSICE_EXTRACT="${PRSICE_EXTRACT}",PRSICE_EXCLUDE="${PRSICE_EXCLUDE}" ${PRSTOOLKITSCRIPTS}/prsice.sh)
+	
+	# Copy the results from the output to the results folder
+	awk '//{print $1,$2,$4 }' ${PRSICE_OUTPUTNAME}.best > ${RESULTS_FILE}
 
 elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
 
@@ -353,27 +370,27 @@ elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
 	WEIGHTS_FILE="${PRSDIR}/Rapido_weights.txt"
 
 	# Calculate weights using RapidoPGS
-	RAPIDO_JOBID=$(sbatch --parsable --wait --job-name=PRS_RAPIDO ${QC_DEPENDENCY} --time ${RUNTIME_RAPIDO} --mem ${MEMORY_RAPIDO} -o ${LOGDIR}/${OUTPUTNAME}_RAPIDO.log ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${WEIGHTS_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_SNP_COL} -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_NON_EFFECT_COL} -a ${BF_EFFECT_COL} -f ${BF_FRQ_COL} -w ${BF_WFRQ} -m ${BF_STAT_COL} -e ${BF_SE_COL} -s ${BF_SAMPLE_SIZE} -l ${RP_trait})
+	RAPIDO_JOBID=$(sbatch --parsable --wait --job-name=PRS_RAPIDO ${QC_DEPENDENCY} --time ${RUNTIME_RAPIDO} --mem ${MEMORY_RAPIDO} -o ${LOGDIR}/${OUTPUTNAME}_RAPIDO.log ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${WEIGHTS_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_ID_COL} -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_NON_EFFECT_COL} -a ${BF_EFFECT_COL} -f "${BF_FRQ_COL}" -m ${BF_STAT_COL} -e ${BF_SE_COL} -s ${BF_SAMPLE_SIZE} -n "${BF_SBJ_COL}" -g "${RP_filt_threshold}" -j "${RP_recalc}" -l ${BF_TARGET_TYPE} -v "${RP_ppi}" -x "${RP_prior}" -z "${RP_REF}")
 	RAPIDO_DEPENDENCY="--dependency=afterok:${RAPIDO_JOBID}"
 	
 	# Calculate individual scores using PLINK
-	PLINK_HEADER="header"
-	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${RAPIDO_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${BF_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${WEIGHTS_FILE},SNP_COL=SNPID,EFFECT_COL=REF,SCORE_COL=WEIGHT,PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINK_HEADER="TRUE"
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${RAPIDO_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${VAL_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${WEIGHTS_FILE},SNP_COL=SNPID,EFFECT_COL=REF,SCORE_COL=WEIGHT,PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
 	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
 
 	# Sum the effect sizes to calculate the final score
-	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -a 1 -b 2 -r 6 -o ${RESULTS_FILE})
-
+	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -r "SCORE1_SUM" -o ${RESULTS_FILE})
 fi
 
 echo ""
 echo "${PRSMETHOD} risk score calculation has finished."
 echo ""
 
-if [[ ${KEEP_TEMP_FILES} == "YES" ]]; then
+# KEEP_TEMP_FILES indicates whether to save the temporarily generated files
+if [[ ${KEEP_TEMP_FILES} == "TRUE" ]]; then
 	echo "KEEP_TEMP_FILES parameter is active, temporary files stored in [ ${PRSDIR} ] will not be removed."
 
-elif [[ ${KEEP_TEMP_FILES} == "NO" ]]; then
+elif [[ ${KEEP_TEMP_FILES} == "FALSE" || ${KEEP_TEMP_FILES} == "" ]]; then
 	echo "KEEP_TEMP_FILES parameter is inactive, temporary files stored in [ ${PRSDIR} ] will now be removed."
 	### TODO: insert delete function here
 
@@ -388,188 +405,4 @@ echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... �
 
 # script_copyright_message
 
-
-
-
-
-
-
-
-
-
-
-# if [[ ${VALIDATIONFORMAT} == "VCF" ]]; then
-# 	echo ""
-# 	echo "The validation dataset is encoded in the [${VALIDATIONFORMAT}] file-format; PRSToolKit will procede "
-# 	echo "immediately after optional QC."
-
-# elif [[ ${VALIDATIONFORMAT} == "OXFORD" || ${VALIDATIONFORMAT} == "PLINK" ]]; then
-
-# 	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-# 	echoerrornooption ""
-# 	echoerrorflashnooption "               *** Oh, computer says no! This option is not available yet. ***"
-# 	echoerrornooption "Unfortunately the [${VALIDATIONFORMAT}] file-format is not supported."
-# 	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-# 	### The wrong arguments are passed, so we'll exit the script now!
-# 	echo ""
-# 	script_copyright_message
-# 	exit 1
-	
-# else
-# 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-# 	echoerror ""
-# 	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
-# 	echoerror "You can indicate the following validation file-formats:"
-# 	echoerror "OXFORD   -- file format used by IMPUTE2 (.gen/.bgen) [default]."
-# 	echonooption "VCF   -- VCF file format, version 4.2 is expected."
-# 	echoerror "PLINK    -- PLINK file format; PRSToolKit can immediately use this."
-# 	echonooption "(Opaque: *not implemented yet*)"
-# 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-# 	### The wrong arguments are passed, so we'll exit the script now!
-# 	echo ""
-# 	script_copyright_message
-# 	exit 1
-# fi
-##########################################################################################
-### SETTING DIRECTORIES (from configuration file).
-
-# # Where PRSToolKit resides
-# PRSTOOLKITDIR=${PRSTOOLKITDIR} # from configuration file
-
-# # Data information
-# LDDATA=${LDDATA} # from configuration file
-# VALIDATIONDATA="${VALIDATIONDATA}/${VALIDATIONFILE}" # from configuration file
-
-
-
-
-
-# 	if [[ ${VALIDATIONQC} == "YES" ]]; then
-
-# 		echo ""
-# 		echobold "#========================================================================================================"
-# 		echobold "#== OPTIONAL VALIDATION QUALITY CONTROL IS IN EFFECT [DEFAULT]"
-# 		echobold "#========================================================================================================"
-# 		echobold "#"
-# 		echo ""
-# 		echo "We will perform quality control on the validation dataset [${VALIDATIONNAME}] which is in [${VALIDATIONFORMAT}]-format."
-	
-# 		### Example head of STATS-file 15 16 19
-# 		### SNPID RSID Chr BP A_allele B_allele MinorAllele MajorAllele AA AB BB AA_calls AB_calls BB_calls MAF HWE missing missing_calls Info CAF
-# 		### --- 1:10177:A:AC 01 10177 A AC AC A 554.34 731.78 239.87 46 56 8 0.39696 0.018899 6.3195e-06 0.92792 0.35024 0.396962
-# 		### --- 1:10235:T:TA 01 10235 T TA TA T 1524.2 1.8055 0 1523 0 0 0.00059159 4.8216e-17 0 0.0019659 0.26078 0.000591577
-# 		### --- rs145072688:10352:T:TA 01 10352 T TA TA T 490.88 755.85 279.26 46 55 15 0.43066 0.14578 1.0239e-05 0.92398 0.34431 0.430661
-# 		### --- 1:10505:A:T 01 10505 A T T A 1525.7 0.34198 0 1525 0 0 0.00011205 -0 0 0.00065531 0.2532 0.000112048
-# # 		
-# # 		echo "SNPID RSID Chr BP alleleA alleleB HWE Info CAF" > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt
-# # 		zcat ${VALIDATIONDATA}/aegs_combo_1kGp3GoNL5_RAW.stats.gz | tail -n +2 | awk ' $15 > '$MAF' && $16 > '$HWE' && $19 > '$INFO' ' >> ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt
-# # 		
-# # 		cat ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keep.txt | awk '{ print $2 }' > ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt
-# # 		
-# 		for CHR in $(seq 1 22) X; do 
-# 		### FOR DEBUGGING
-# 		### for CHR in 22; do
-		
-# 			echo ""
-# 			echo "* processing chromosome ${CHR} and extracting relevant variants."
-# 			echo "${QCTOOL} -g ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.gen.gz -s ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.sample -excl-rsids ${SUBPROJECTDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.keeptofilter.txt -og ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -os ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample" > ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.sh
-# 			qsub -S /bin/bash -N PRS.FILTER.${VALIDATIONNAME}.chr${CHR} -o ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.log -e ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.errors -l h_vmem=${QMEMFILTER} -l h_rt=${QRUNTIMEFILTER} -wd ${PARSEDDIR} ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.filter.sh
-		
-# 			echo ""
-# 			echo "* converting to PLINK-binary format."
-# 			echo "${QCTOOL} -g ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen -s ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample -threshhold ${THRESHOLD} -og ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped" > ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
-# 			qsub -S /bin/bash -N PRS.CONVERT.${VALIDATIONNAME}.chr${CHR} -hold_jid PRS.FILTER.${VALIDATIONNAME}.chr${CHR} -o ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.log -e ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.errors -l h_vmem=${QMEMCONVERT} -l h_rt=${QRUNTIMECONVERT} -wd ${PARSEDDIR} ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
-		
-# 			echo ""
-# 			echo "* deleting old files."
-# 			echo "rm -v ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.gen ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.sample" > ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.sh
-# 			qsub -S /bin/bash -N PRS.CLEAN.${VALIDATIONNAME}.chr${CHR} -hold_jid PRS.CONVERT.${VALIDATIONNAME}.chr${CHR} -o ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.log -e ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.errors -l h_vmem=${QMEM} -l h_rt=${QRUNTIME} -wd ${PARSEDDIR} ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.clean.sh
-		
-# 		done
-
-# 	elif [[ ${VALIDATIONQC} == "NO" ]]; then
-
-# 		echo ""
-# 		echobold "#========================================================================================================"
-# 		echobold "#== PARSING DATA TO PLINK-BINARY FORMAT"
-# 		echobold "#========================================================================================================"
-# 		echobold "#"
-# 		echo ""
-# 		echo "We will parse the validation dataset [${VALIDATIONNAME}], which is in [${VALIDATIONFORMAT}]-format, to PLINK-binary format."
-	
-# 		for CHR in $(seq 1 22) X; do 
-# 		### FOR DEBUGGING
-# 		### for CHR in 22; do
-		
-# 			echo ""
-# 			echo "* processing chromosome ${CHR} and converting to PLINK-binary format."
-# 			echo "${QCTOOL} -g ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.gen.gz -s ${VALIDATIONDATA}/${VALIDATIONFILE}${CHR}.sample -threshhold ${THRESHOLD} -og ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR} -ofiletype binary_ped" > ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
-# 			qsub -S /bin/bash -N PRS.CONVERT.${VALIDATIONNAME}.chr${CHR} -o ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.log -e ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.errors -l h_vmem=${QMEMCONVERT} -l h_rt=${QRUNTIMECONVERT} -wd ${PARSEDDIR} ${PARSEDDIR}/${VALIDATIONNAME}.${POPULATION}.${REFERENCE}.chr${CHR}.convert.sh
-		
-# 		done
-	
-# 	fi
-
-# 
-
-
-
-
-
-
-# 	echobold "#========================================================================================================"
-# 	echobold "#== VALIDATION QUALITY CONTROL"
-# 	echobold "#========================================================================================================"
-# 	echobold "#"
-# 	### REQUIRED: VEGAS/VEGAS2 settings.
-# 	### Note: we do `cd ${VEGASDIR}` because VEGAS is making temp-files in a special way, 
-# 	###       adding a date-based number in front of the input/output files.
-# 	echo "Creating VEGAS input files..." 
-# 	mkdir -v ${SUBPROJECTDIR}/vegas
-# 	VEGASRESULTDIR=${SUBPROJECTDIR}/vegas
-# 	chmod -Rv a+rwx ${VEGASRESULTDIR}
-# 	echo "...per chromosome."
-
-# 	while IFS='' read -r GWASCOHORT || [[ -n "$GWASCOHORT" ]]; do
-# 			LINE=${GWASCOHORT}
-# 			COHORT=$(echo "${LINE}" | awk '{ print $1 }')
-# 			echo "     * ${COHORT}"
-		
-# 			if [ ! -d ${VEGASRESULTDIR}/${COHORT} ]; then
-# 				echo "> VEGAS results directory doesn't exist - Mr. Bourne will create it for you."
-# 				mkdir -v ${VEGASRESULTDIR}/${COHORT}
-# 				chmod -Rv a+rwx ${VEGASRESULTDIR}/${COHORT}
-# 			else
-# 				echo "> VEGAS results directory already exists."
-# 				chmod -Rv a+rwx ${VEGASRESULTDIR}/${COHORT}
-# 			fi
-
-# 		for CHR in $(seq 1 23); do
-# 			if [[ $CHR -le 22 ]]; then 
-# 				echo "Processing chromosome ${CHR}..."
-# 				echo "zcat ${PARSEDDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.FINAL.txt.gz | ${SCRIPTS}/parseTable.pl --col ${VARIANTID},CHR,P | awk ' \$2==${CHR} ' | awk '{ print \$1, \$3 }' | tail -n +2 > ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.forVEGAS.txt " > ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.sh
-# # 				qsub -S /bin/bash -N VEGAS2.${PROJECTNAME}.chr${CHR}.create -hold_jid gwas.wrapper -o ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.log -e ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.errors -l h_vmem=${QMEMVEGAS} -l h_rt=${QRUNTIMEVEGAS} -wd ${VEGASRESULTDIR} ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.sh
-			
-# 				echo "cd ${VEGASRESULTDIR}/${COHORT} " > ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.sh
-# 				echo "$VEGAS2 -G -snpandp ${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.forVEGAS.txt -custom ${VEGAS2POP}.chr${CHR} -glist ${VEGAS2GENELIST} -upper ${VEGAS2UPPER} -lower ${VEGAS2LOWER} -chr ${CHR} -out ${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.fromVEGAS " >> ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.sh
-# # 				qsub -S /bin/bash -N VEGAS2.${PROJECTNAME}.chr${CHR} -hold_jid VEGAS2.${PROJECTNAME}.chr${CHR}.create -o ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.log -e ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.errors -l h_vmem=${QMEMVEGAS} -l h_rt=${QRUNTIMEVEGAS} -wd ${VEGASRESULTDIR} ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.sh
-	
-# 			elif [[ $CHR -eq 23 ]]; then  
-# 				echo "Processing chromosome X..."
-# 				echo "zcat ${PARSEDDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.FINAL.txt.gz | ${SCRIPTS}/parseTable.pl --col ${VARIANTID},CHR,P | awk ' \$2==\"X\" ' | awk '{ print \$1, \$3 }' | tail -n +2 > ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.forVEGAS.txt " > ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.sh
-# # 				qsub -S /bin/bash -N VEGAS2.${PROJECTNAME}.chr${CHR}.create -hold_jid gwas.wrapper -o ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.log -e ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.errors -l h_vmem=${QMEMVEGAS} -l h_rt=${QRUNTIMEVEGAS} -wd ${VEGASRESULTDIR} ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.createVEGAS.sh
-			
-# 				echo "cd ${VEGASRESULTDIR}/${COHORT} " > ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.sh
-# 				echo "$VEGAS2 -G -snpandp ${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.forVEGAS.txt -custom ${VEGAS2POP}.chr${CHR} -glist ${VEGAS2GENELIST} -upper ${VEGAS2UPPER} -lower ${VEGAS2LOWER} -chr ${CHR} -out ${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.fromVEGAS " >> ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.sh
-# # 				qsub -S /bin/bash -N VEGAS2.${PROJECTNAME}.chr${CHR} -hold_jid VEGAS2.${PROJECTNAME}.chr${CHR}.create -o ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.log -e ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.errors -l h_vmem=${QMEMVEGAS} -l h_rt=${QRUNTIMEVEGAS} -wd ${VEGASRESULTDIR} ${VEGASRESULTDIR}/${COHORT}/${COHORT}.${PROJECTNAME}.${REFERENCE}.${POPULATION}.chr${CHR}.runVEGAS.sh
-	
-# 			else
-# 				echo "*** ERROR *** Something is rotten in the City of Gotham; most likely a typo. Double back, please."	
-# 				exit 1
-# 			fi
-
-# 		done
-# 	done < ${BASEDATA}
-#
-	
 

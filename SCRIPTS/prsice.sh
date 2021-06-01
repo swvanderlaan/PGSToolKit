@@ -2,15 +2,42 @@
 
 # Wrapper script for PRSice2: https://www.prsice.info
 
+# Set the optional LD reference dataset
+if [[ ${LDDATA} != "" ]]; then
+    LDDATA="--ld "${LDDATA}\#
+fi
+
+# Set the target type par
+if [[ ${PRSICE_PHENOTYPE_BINARY} == "TRUE" ]]; then
+    PRSICE_PHENOTYPE_BINARY="T"
+elif [[ ${PRSICE_PHENOTYPE_BINARY} == "FALSE" ]]; then
+	PRSICE_PHENOTYPE_BINARY="F"
+fi
+
+# Set the extract file par
+if [[ ${PRSICE_EXTRACT} != "" ]]; then
+    PRSICE_EXTRACT="--extract "${PRSICE_EXTRACT}
+fi
+
+# Set the exclude file par
+if [[ ${PRSICE_EXCLUDE} != "" ]]; then
+    PRSICE_EXCLUDE="--exclude "${PRSICE_EXCLUDE}
+fi
+
+# Run PRSice
 ${RSCRIPT} ${PRSICE2_R} --prsice ${PRSICE2_SH} \
 --dir ${PRSDIR} \
---bar-levels ${PRSICE_BARLEVELS} \
 --base ${BASEDATA} \
---target ${VALIDATIONDATA}/${VALIDATIONPREFIX}\# \
+--target ${TARGETDATA}\# \
 --thread ${PRSICE_THREADS} \
 --${BF_STAT,,} \
---binary-target ${BF_TARGET_TYPE} \
+--binary-target ${PRSICE_PHENOTYPE_BINARY} \
 --type bgen \
+--perm ${PRSICE_PERM} \
+--clump-kb ${PRSICE_CLUMP_KB} \
+--clump-r2 ${PRSICE_CLUMP_R2} \
+--clump-p ${PRSICE_CLUMP_P} \
+${LDDATA} \
 --snp ${BF_ID_COL} \
 --chr ${BF_CHR_COL} \
 --bp ${BF_POS_COL} \
@@ -19,36 +46,8 @@ ${RSCRIPT} ${PRSICE2_R} --prsice ${PRSICE2_SH} \
 --stat ${BF_STAT_COL} \
 --pvalue ${BF_PVALUE_COL} \
 --pheno-file ${PHENOTYPEFILE} \
---pheno-col ${DUMMY_PHENOTYPE} \
-${PRSICE_PLOTTING} \
+--pheno-col ${PRSICE_PHENOTYPE} \
+${PRSICE_EXTRACT} \
+${PRSICE_EXCLUDE} \
 ${PRSICE_SETTINGS} \
 --out ${PRSICE_OUTPUTNAME}
-
-# --keep /hpc/dhl_ec/aligterink/ProjectFiles/sample_data/inclusion.txt \
-
-# PRSice_v233.R --prsice $(command -v prsice_v233) \
-# --dir ${PRSICEDIR} \
-# --seed ${PRSICESEED} \
-# --bar-levels ${PRSICEBARLEVELS} \
-# --base ${BASEDATA_disc} \
-# --target ${TARGETDATA} \
-# --thread ${PRSICETHREADS} \
-# ${STATTYPE} \
-# --binary-target ${TARGETTYPE} \
-# --type ${DATATYPE} \
-# --snp ${SNPID} \
-# --chr ${CHRID} \
-# --bp ${BPID} \
-# --A1 ${A1ID} \
-# --A2 ${A2ID} \
-# --stat ${STATID} \
-# --pvalue ${PVALUEID} \
-# --cov-file ${COVARIATESFILE} \
-# --cov-col ${COVARIATES} \
-# --cov-factor ${COVFACTOR} \
-# --pheno-file ${PHENOTYPEFILE} \
-# --pheno-col ${PHENOTYPE} \
-# --keep ${EXCLUSION} \
-# ${PRSICEPLOTTING} \
-# ${PRSICESETTINGS} \
-# ${PRSICEOUTPUTNAME}

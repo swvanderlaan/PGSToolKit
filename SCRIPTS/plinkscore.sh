@@ -26,12 +26,13 @@ fi
 # PLINK_HEADER indicates whether the weights file has a header, if not then the PLINK column parameters
 # are assumed to be indices instead of column names. This is required as some PRS methods (e.g. PRS-CS)
 # generate weights files without headers.
-if [[ ${PLINK_HEADER} == "" ]]; then
+if [[ ${PLINK_HEADER} == "FALSE" ]]; then
     PLINK_VARIANT_ID_COL_NR=${SNP_COL}
     PLINK_ALLELE_COL_NR=${EFFECT_COL}
     PLINK_SCORE_COL_NR=${SCORE_COL}
+    HEADER_PAR=""
 
-elif [[ ${PLINK_HEADER} == "header" ]]; then
+elif [[ ${PLINK_HEADER} == "TRUE" ]]; then
 
     # Get header of weights file
     HEADER_ARRAY=($(cat ${WEIGHTS_FILE} | head -1))
@@ -43,6 +44,8 @@ elif [[ ${PLINK_HEADER} == "header" ]]; then
     PLINK_ALLELE_COL_NR=$(find_index)
     COLUMN=${SCORE_COL}
     PLINK_SCORE_COL_NR=$(find_index)
+
+    HEADER_PAR="header"
 
 else
     echo "BF_PLINK_COLS_ARE_INDEX parameter not recognized, exiting..."
@@ -56,10 +59,10 @@ for file in ${VALIDATIONDATA}/${VALIDATIONPREFIX}*.bgen; do
     --bgen $file ${REF_POS} \
     --sample ${SAMPLE_FILE} \
     --out ${PRSDIR}/plink2_$(basename $file .bgen) \
-    --score ${WEIGHTS_FILE} \
+    --score ${WEIGHTS_FILE} cols=+scoresums \
     ${PLINK_VARIANT_ID_COL_NR} \
     ${PLINK_ALLELE_COL_NR} \
     ${PLINK_SCORE_COL_NR} \
-    ${PLINK_HEADER} \
+    ${HEADER_PAR} \
     ${PLINK_SETTINGS}
 done

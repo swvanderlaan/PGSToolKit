@@ -6,12 +6,8 @@
 #SBATCH --time=50:00:00                                           # Time limit hrs:min:sec
 #SBATCH --mem=4G	                                              # RAM required per node
 
-set -- "${@:1}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config"
-# set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/UKBB.GWAS1KG.EXOME.CAD.SOFT.META.PublicRelease.300517.rsid.QCd.txt.gz"
-# set -- "${@:1:2}" "/home/dhl_ec/aligterink/PRSToolKit/prstoolkit.config" "/hpc/dhl_ec/aligterink/ProjectFiles/tmpbase.txt"
-
-
-# Setting colouring
+##########################################################################################
+### Setting colouring
 NONE='\033[00m'
 OPAQUE='\033[2m'
 FLASHING='\033[5m'
@@ -27,15 +23,9 @@ PURPLE='\033[01;35m'
 CYAN='\033[01;36m'
 WHITE='\033[01;37m'
 
-### Regarding changing the 'type' of the things printed with 'echo'
-### Refer to: 
-### - http://askubuntu.com/questions/528928/how-to-do-underline-bold-italic-strikethrough-color-background-and-size-i
-### - http://misc.flogisoft.com/bash/tip_colors_and_formatting
-### - http://unix.stackexchange.com/questions/37260/change-font-in-echo-command
-
 # Creating color-functions
-function echobold { #'echobold' is the function name
-    echo -e "${BOLD}${1}${NONE}" # this is whatever the function needs to execute, note ${1} is the text for echo
+function echobold { 
+    echo -e "${BOLD}${1}${NONE}"
 }
 function echoitalic { 
     echo -e "${ITALIC}${1}${NONE}" 
@@ -49,8 +39,8 @@ function echoerrorflash {
 function echoerror { 
     echo -e "${RED}${1}${NONE}"
 }
-function echocyan { #'echobold' is the function name
-    echo -e "${CYAN}${1}${NONE}" # this is whatever the function needs to execute.
+function echocyan {
+    echo -e "${CYAN}${1}${NONE}"
 }
 function echoerrornooption { 
     echo -e "${YELLOW}${1}${NONE}"
@@ -88,7 +78,6 @@ script_copyright_message() {
 script_arguments_error() {
 	echoerror "$1" # Additional message
 	echoerror "- Argument #1 is path_to/filename of the configuration file."
-	# echoerror "- Argument #2 is path_to/filename of the list of GWAS summary statistics-files with arbitrarily chosen names, path_to, and file-names."
 	echoerror ""
 	echoerror "An example command would be: prstoolkit.sh [arg1]"
 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -103,23 +92,21 @@ echoitalic "                        --- prepare data and calculate polygenic sco
 echobold ""
 echobold "* Version:      v1.0.1"
 echobold ""
-echobold "* Last update:  2021-04-07"
+echobold "* Last update:  2021-06-21"
 echobold "* Written by:   Sander W. van der Laan | s.w.vanderlaan@gmail.com"
-echobold "	       Anton Ligterink | anton.ligterink@gmail.com"
+echobold "	        Anton Ligterink"
 echobold "* Description:  Prepare files and calculate polygenic scores. This tool will do the following:"
 echobold "                - Perform quality control on GWAS summary data"
-echobold "                - Calculate polygenic risk scores from GWAS summary statistcs (LDpred/PRSICE/RapidoPGS/PRScs)"
-echobold "				  - Calculate polygenic scores using premade scoring systems (PLINK)"
-echobold "* References:   RapidoPGS: https://cran.r-project.org/web/packages/RapidoPGS/vignettes/Computing_RapidoPGS.html"
+echobold "                - Calculate polygenic risk scores from GWAS summary statistcs (PRSice/RapidoPGS/PRS-CS)"
+echobold " 		- Calculate polygenic scores using premade scoring systems (PLINK)"
+echobold "* References:   RapidoPGS: https://rdrr.io/cran/RapidoPGS/man/rapidopgs_single.html"
 echobold "                LDpred: https://github.com/bvilhjal/ldpred      PRSICE: https://www.prsice.info/"
 echobold "                PRScs: https://github.com/getian107/PRScs       PLINK: http://zzz.bwh.harvard.edu/plink/"
 echobold "* REQUIRED: "
 echobold "  - A high-performance computer cluster with a SLURM system"
 echobold "  - R v3.6+, Python 3.7+"
-echobold "  - Required R 3.6+ modules: [RapidoPGS], [data.table], [optparse]"
-echobold "  - Required Python 3.7+ modules: [pandas], [scipy], [numpy], [plinkio], [h5py]"
-### ADD-IN: function to check requirements...
-### This might be a viable option! https://gist.github.com/JamieMason/4761049
+echobold "  - Required R 3.6+ modules: [RapidoPGS], [data.table], [optparse], [remotes], [method], [tools], [ggplot2], [grDevices], [RColorBrewer]"
+echobold "  - Required Python 3.7+ modules: [gzip], [argparse], [scipy], [h5py]"
 echobold ""
 echobold "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "Today's: "$(date)
@@ -140,14 +127,12 @@ if [[ $# -lt 1 ]]; then
 else
 	echo "These are the "$#" arguments that passed:"
 	echo "The configuration file..................: "$(basename ${1}) # argument 1
-	# echo "The GWAS-files file.....................: "$(basename ${2}) # argument 2
 fi 
 
 ##########################################################################################
 ### Loading command-line arguments and configuration file
 source "$1" # Depends on arg1.
 CONFIGURATIONFILE="$1" # Depends on arg1 -- but also on where it resides!!!
-# BASEDATA="$2" # Depends on arg2 -- all the GWAS dataset information
 
 ##########################################################################################
 ### Set the output file name
@@ -155,11 +140,11 @@ OUTPUTNAME=${PROJECTNAME}_${PRSMETHOD}_$(date +%Y-%b-%d--%H-%M)_job_${SLURM_JOB_
 
 ##########################################################################################
 ### Parameter validation
-if [[ ${PRSMETHOD} == "PLINK" || ${PRSMETHOD} == "PRSCS" || ${PRSMETHOD} == "LDPRED" || ${PRSMETHOD} == "PRSICE" || ${PRSMETHOD} == "RAPIDOPGS" || ${PRSMETHOD} == "NONE" ]]; then
+if [[ ${PRSMETHOD} == "PLINK" || ${PRSMETHOD} == "PRSCS" || ${PRSMETHOD} == "PRSICE" || ${PRSMETHOD} == "RAPIDOPGS" || ${PRSMETHOD} == "NONE" ]]; then
 	echo ""
 	echo "Calculating Polygenic Risk Scores using ${PRSMETHOD}."
 
-elif [[ ${PRSMETHOD} == "MANUAL" ]]; then
+elif [[ ${PRSMETHOD} == "MANUAL" || ${PRSMETHOD} == "LDPRED" ]]; then
 	echo ""
 	echoerrornooption "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	echoerrornooption ""
@@ -177,11 +162,13 @@ else
 	echoerror ""
 	echoerrorflash "                  *** Oh, computer says no! Argument not recognised. ***"
 	echoerror "You have the following options to calculate polygenic scores:"
-	echoerror "LDPRED   -- use LDpred to LD-correct GWAS summary statistics and calculate polygenic scores [default]."
-	echonooption "MANUAL   -- use an in-house developed Rscript to calculate a polygenic score using a limited set of variants."
-	echonooption "PLINK    -- use PLINK to calculate scores, GWAS summary statistics will be LD-pruned using p-value thresholds (traditional approach, slow)."
-	echonooption "PRSICE   -- use PRSice to calculate scores, GWAS summary statistics will be LD-pruned using p-value thresholds (new approach, fast)."
-	echonooption "(Opaque: *not implemented yet*)"
+	echoerror "PLINK	  -- use PLINK to calculate PGS from posterior SNP effect sizes"
+	echoerror "PRSICE	  -- use PRSice to calculate PGS, GWAS summary statistics will be LD-pruned using P-value thresholds"
+	echoerror "PRSCS	  -- use PRS-CS to calculate PGS by inferring posterior SNP effect sizes under continuous shrinkage priors"
+	echoerror "RAPIDOPGS -- use RapidoPGS to calculate PGS from GWAS summary statistics without requiring an external LD panel"
+	echonooption "LDPRED    -- use LDpred to LD-correct GWAS summary statistics and calculate polygenic scores *not implemented yet*"
+	echonooption "MANUAL    -- use an in-house developed Rscript to calculate a polygenic score using a limited set of variants *not implemented yet*"
+	echoerror "NONE	  -- don't perform PRS, instead only peform quality control"
 	echoerror "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	### The wrong arguments are passed, so we'll exit the script now!
 	echo ""
@@ -190,17 +177,17 @@ else
 fi
 
 ##########################################################################################
-### SETTING UP NECESSARY DIRECTORIES
+### Setting up necessary directories
 echo ""
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-echo "Checking for the existence of the output directory [ ${OUTPUTDIRNAME} ]."
-if [ ! -d ${PROJECTDIR}/${OUTPUTDIRNAME} ]; then
+echo "Checking for the existence of the output directory [ ${OUTPUT_DIRNAME} ]."
+if [ ! -d ${PROJECT_DIR}/${OUTPUT_DIRNAME} ]; then
 	echo "> Output directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${OUTPUTDIRNAME}
+	mkdir -v ${PROJECT_DIR}/${OUTPUT_DIRNAME}
 else
 	echo "> Output directory already exists."
 fi
-OUTPUTDIR=${PROJECTDIR}/${OUTPUTDIRNAME}
+OUTPUTDIR=${PROJECT_DIR}/${OUTPUT_DIRNAME}
 
 echo ""
 echo "Checking for the existence of the subproject directory [ ${SUBPROJECT_DIR_NAME} ]."
@@ -210,27 +197,27 @@ if [ ! -d ${OUTPUTDIR}/${SUBPROJECT_DIR_NAME} ]; then
 else
 	echo "> Subproject directory already exists."
 fi
-SUBPROJECTDIR=${OUTPUTDIR}/${SUBPROJECT_DIR_NAME}
+SUBPROJECT_DIR=${OUTPUTDIR}/${SUBPROJECT_DIR_NAME}
 
 echo ""
-echo "Checking for the existence of the ${LOG_DIR_NAME} directory [ ${PROJECTDIR}/${LOG_DIR_NAME} ]."
-if [ ! -d ${PROJECTDIR}/${LOG_DIR_NAME} ]; then
-	echo "> ${LOG_DIR_NAME} directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${LOG_DIR_NAME}
+echo "Checking for the existence of the ${LOG_DIRNAME} directory [ ${PROJECT_DIR}/${LOG_DIRNAME} ]."
+if [ ! -d ${PROJECT_DIR}/${LOG_DIRNAME} ]; then
+	echo "> ${LOG_DIRNAME} directory doesn't exist - Mr. Bourne will create it for you."
+	mkdir -v ${PROJECT_DIR}/${LOG_DIRNAME}
 else
-	echo "> ${LOG_DIR_NAME} directory already exists."
+	echo "> ${LOG_DIRNAME} directory already exists."
 fi
-LOGDIR=${PROJECTDIR}/${LOG_DIR_NAME}
+LOGDIR=${PROJECT_DIR}/${LOG_DIRNAME}
 
 echo ""
-echo "Checking for the existence of the main working directory [ ${PROJECTDIR}/${MAIN_WORKDIR_NAME} ]."
-if [ ! -d ${PROJECTDIR}/${MAIN_WORKDIR_NAME} ]; then
+echo "Checking for the existence of the main working directory [ ${PROJECT_DIR}/${MAIN_WORKDIR_NAME} ]."
+if [ ! -d ${PROJECT_DIR}/${MAIN_WORKDIR_NAME} ]; then
 	echo "> ${MAIN_WORKDIR_NAME} directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECTDIR}/${MAIN_WORKDIR_NAME}
+	mkdir -v ${PROJECT_DIR}/${MAIN_WORKDIR_NAME}
 else
 	echo "> ${MAIN_WORKDIR_NAME} directory already exists."
 fi
-MAIN_WORKDIR=${PROJECTDIR}/${MAIN_WORKDIR_NAME}
+MAIN_WORKDIR=${PROJECT_DIR}/${MAIN_WORKDIR_NAME}
 
 echo ""
 echo "Checking for the existence of the working directory for this project [ ${MAIN_WORKDIR}/${OUTPUTNAME} ]."
@@ -247,32 +234,37 @@ echo "The scene is properly set, and directories are created! 🖖"
 echo "PRSToolKit directory............................................: "${PRSTOOLKITDIR}
 echo "LD reference data directory.....................................: "${LDDATA}
 echo "Validation data directory.......................................: "${VALIDATIONDATA}
-echo "Main directory..................................................: "${PROJECTDIR}
+echo "Main directory..................................................: "${PROJECT_DIR}
 echo "Main analysis output directory..................................: "${OUTPUTDIR}
-echo "Subproject's analysis output directory..........................: "${SUBPROJECTDIR}
+echo "Subproject's analysis output directory..........................: "${SUBPROJECT_DIR}
 echo "Log directory...................................................: "${LOGDIR}
 echo "Main working directory..........................................: "${MAIN_WORKDIR}
 echo "Working directory for this project..............................: "${PRSDIR}
 echo ""
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-
 echo ""
-# SAVE_CONFIG indicates whether to save the configuration file along with the results
+
+##########################################################################################
+### Save the configuration file to the results folder depending on the SAVE_CONFIG parameter
 if [[ ${SAVE_CONFIG} == "TRUE" ]]; then	
-	echo "SAVE_CONFIG parameter is active, the configuration file will be saved in [ ${SUBPROJECTDIR}/${OUTPUTNAME}.config ]."
-	cp ${CONFIGURATIONFILE} ${SUBPROJECTDIR}/${OUTPUTNAME}.config
+	echo "SAVE_CONFIG parameter is active, the configuration file will be saved in [ ${SUBPROJECT_DIR}/${OUTPUTNAME}.config ]."
+	cp ${CONFIGURATIONFILE} ${SUBPROJECT_DIR}/${OUTPUTNAME}.config
 
 elif [[ ${SAVE_CONFIG} == "FALSE" || ${SAVE_CONFIG} == "" ]]; then
 	true
 
 else
-	echo "SAVE_CONFIG parameter not recognized, the configuration file will be saved in [ ${SUBPROJECTDIR}/${OUTPUTNAME}.config ]."
-	cp ${CONFIGURATIONFILE} ${SUBPROJECTDIR}/${OUTPUTNAME}.config
+	echo "SAVE_CONFIG parameter not recognized, the configuration file will be saved in [ ${SUBPROJECT_DIR}/${OUTPUTNAME}.config ]."
+	cp ${CONFIGURATIONFILE} ${SUBPROJECT_DIR}/${OUTPUTNAME}.config
 
 fi
 echo ""
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
+##########################################################################################
+### Perform quality control if enabled
 QC_DEPENDENCY=""
+
 if [[ ${QC} == "YES" ]]; then
 
 	echo ""
@@ -288,7 +280,6 @@ if [[ ${QC} == "YES" ]]; then
 	# Start the quality control job
 	QC_SUMMARY_FILE=${PRSDIR}/${OUTPUTNAME}_QC_results.txt
 	QC_OUTPUT=${PRSDIR}/QCd_basefile.txt.gz
-	# QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.R -b ${BASEDATA} -s ${STATS_FILE} -o ${PRSDIR}/QCd_basefile.txt.gz -m ${MAF} -i ${INFO} -a ${BF_ID_COL} -d ${STATS_ID_COL} -c ${STATS_MAF_COL} -t ${STATS_INFO_COL} -r ${QC_SUMMARY_FILE})
 	QC_JOBID=$(sbatch --parsable --wait --job-name=PRS_QC --time ${RUNTIME_QC} --mem ${MEMORY_QC} -o ${LOGDIR}/${OUTPUTNAME}_QC.log ${PRSTOOLKITSCRIPTS}/QC.py -b ${BASEDATA} -i ${BF_ID_COL} -s ${STATS_FILE} -a ${STATS_ID_COL} -c ${STATS_MAF_COL} -d ${STATS_INFO_COL} -m ${MAF} -n ${INFO} -o ${QC_OUTPUT} -r ${QC_SUMMARY_FILE})
 	QC_DEPENDENCY="--dependency=afterok:${QC_JOBID}"
 
@@ -315,11 +306,10 @@ echo ""
 echo "Risk score computation will now commence."
 echo ""
 
-RESULTS_FILE=${SUBPROJECTDIR}/${OUTPUTNAME}_results.txt
+RESULTS_FILE=${SUBPROJECT_DIR}/${OUTPUTNAME}_results.txt
 
 ##########################################################################################
 ### Run the individual PRS method scripts
-
 if [[ ${PRSMETHOD} == "PLINK" ]]; then
 
 	# Calculate the effect sizes for each chromosome
@@ -337,10 +327,10 @@ elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
 	PARSED_BASEDATA=${PRSDIR}/basefile_PRScs_format.txt
 	PRSCS_format_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs_format ${QC_DEPENDENCY} --time ${RUNTIME_PRSCS_format} --mem ${MEMORY_PRSCS_format} -o ${LOGDIR}/${OUTPUTNAME}_PRScs_format.log ${PRSTOOLKITSCRIPTS}/basefile_PRScs_formatter.R -i ${BASEDATA} -o ${PARSED_BASEDATA} -d ${BF_ID_COL} -r ${BF_EFFECT_COL} -a ${BF_NON_EFFECT_COL} -z ${BF_STAT} -m ${BF_STAT_COL} -v ${BF_PVALUE_COL})
 	PRSCS_format_DEPENDENCY="--dependency=afterok:${PRSCS_format_JOBID}"
-
 	WEIGHTS_FILE=${PRSDIR}/PRScs_weights_combined.txt
 
-	PRSCS_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs ${PRSCS_format_DEPENDENCY} --time ${RUNTIME_PRSCS} --mem ${MEMORY_PRSCS} -o ${LOGDIR}/${OUTPUTNAME}_PRScs.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},SAMPLE_FILE=${SAMPLE_FILE},BIM_FILE_AVAILABLE=${BIM_FILE_AVAILABLE},BIM_FILE_PATH=${BIM_FILE_PATH},PRSDIR=${PRSDIR},REF_POS=${VAL_REF_POS},BF_SAMPLE_SIZE=${BF_SAMPLE_SIZE},PLINK=${PLINK},PYTHONPATH=${PYTHONPATH},LDDATA=${LDDATA},PRSCS=${PRSCS},PARSED_BASEDATA=${PARSED_BASEDATA},WEIGHTS_FILE=${WEIGHTS_FILE} ${PRSTOOLKITSCRIPTS}/prscs.sh)
+	# Run PRS-CS
+	PRSCS_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRScs ${PRSCS_format_DEPENDENCY} --time ${RUNTIME_PRSCS} --mem ${MEMORY_PRSCS} -c ${PRSCS_CPUS} -o ${LOGDIR}/${OUTPUTNAME}_PRScs.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},SAMPLE_FILE=${SAMPLE_FILE},BIM_FILE_AVAILABLE=${BIM_FILE_AVAILABLE},BIM_FILE_PATH=${BIM_FILE_PATH},PRSDIR=${PRSDIR},REF_POS=${VAL_REF_POS},BF_SAMPLE_SIZE=${BF_SAMPLE_SIZE},PLINK=${PLINK},PYTHONPATH=${PYTHONPATH},LDDATA=${LDDATA},PRSCS=${PRSCS},PARSED_BASEDATA=${PARSED_BASEDATA},WEIGHTS_FILE=${WEIGHTS_FILE},PRSCS_THREADS=${PRSCS_THREADS} ${PRSTOOLKITSCRIPTS}/prscs.sh)
 	PRSCS_DEPENDENCY="--dependency=afterok:${PRSCS_JOBID}"
 
 	# Calculate individual scores using PLINK
@@ -358,11 +348,16 @@ elif [[ ${PRSMETHOD} == "LDPRED" ]]; then
 	echo "not implemented"
 
 elif [[ ${PRSMETHOD} == "PRSICE" ]]; then
+
+	# Run PRSice
 	PRSICE_OUTPUTNAME=${PRSDIR}/out
 	PRSICE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PRSICE ${QC_DEPENDENCY} --time ${RUNTIME_PRSICE} --mem ${MEMORY_PRSICE} -c ${PRSICE_CPUS} -o ${LOGDIR}/${OUTPUTNAME}_PRSICE.log --export=ALL,RSCRIPT=${RSCRIPT},PRSICE2_R=${PRSICE2_R},PRSICE2_SH=${PRSICE2_SH},PRSDIR=${PRSDIR},BASEDATA=${BASEDATA},TARGETDATA=${VALIDATIONDATA}/${VALIDATIONPREFIX},BF_STAT=${BF_STAT},PRSICE_PHENOTYPE_BINARY=${PRSICE_PHENOTYPE_BINARY},BF_ID_COL=${BF_ID_COL},BF_CHR_COL=${BF_CHR_COL},BF_POS_COL=${BF_POS_COL},BF_EFFECT_COL=${BF_EFFECT_COL},BF_NON_EFFECT_COL=${BF_NON_EFFECT_COL},BF_STAT_COL=${BF_STAT_COL},BF_PVALUE_COL=${BF_PVALUE_COL},PHENOTYPEFILE=${SAMPLE_FILE},PRSICE_PHENOTYPE=${PRSICE_PHENOTYPE},PRSICE_CLUMP_KB=${PRSICE_CLUMP_KB},PRSICE_CLUMP_P=${PRSICE_CLUMP_P},PRSICE_CLUMP_R2=${PRSICE_CLUMP_R2},PRSICE_PERM=${PRSICE_PERM},PRSICE_THREADS=${PRSICE_THREADS},PRSICE_SETTINGS="${PRSICE_SETTINGS}",PRSICE_OUTPUTNAME=${PRSICE_OUTPUTNAME},LDDATA="${LDDATA}",PRSICE_EXTRACT="${PRSICE_EXTRACT}",PRSICE_EXCLUDE="${PRSICE_EXCLUDE}" ${PRSTOOLKITSCRIPTS}/prsice.sh)
 	
 	# Copy the results from the output to the results folder
 	awk '//{print $1,$2,$4 }' ${PRSICE_OUTPUTNAME}.best > ${RESULTS_FILE}
+	echo "The scores best fitted to the \"${PRSICE_PHENOTYPE}\" phenotype were written to the results folder."
+	echo "Note that PRSice has potentially stored additional scores at different P-value thresholds in the tmp folder."
+	echo "For more info visit https://www.prsice.info/step_by_step/"
 
 elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
 
@@ -386,13 +381,14 @@ echo ""
 echo "${PRSMETHOD} risk score calculation has finished."
 echo ""
 
-# KEEP_TEMP_FILES indicates whether to save the temporarily generated files
+##########################################################################################
+### Remove intermediate files depending on the KEEP_TEMP_FILES parameter
 if [[ ${KEEP_TEMP_FILES} == "TRUE" ]]; then
 	echo "KEEP_TEMP_FILES parameter is active, temporary files stored in [ ${PRSDIR} ] will not be removed."
 
 elif [[ ${KEEP_TEMP_FILES} == "FALSE" || ${KEEP_TEMP_FILES} == "" ]]; then
 	echo "KEEP_TEMP_FILES parameter is inactive, temporary files stored in [ ${PRSDIR} ] will now be removed."
-	### TODO: insert delete function here
+	rm -r ${PRSDIR}
 
 else
 	echo "KEEP_TEMP_FILES parameter not recognized, temporary files stored in [ ${PRSDIR} ] will not be removed."
@@ -400,9 +396,7 @@ else
 fi
 
 echo ""
-echocyan "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echocyan "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echobold "Wow. I'm all done buddy. What a job 😱 ! let's have a 🍻🍻 ... 🖖 "
 
-# script_copyright_message
-
-
+script_copyright_message

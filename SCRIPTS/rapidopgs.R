@@ -37,7 +37,7 @@ option_list = list(
   make_option(c("-p", "--poscol"), action="store", default=NA, type='character', help="Name of the position column in the base file"),
   make_option(c("-r", "--refcol"), action="store", default=NA, type='character', help="Name of the reference allele column in the base file"),
   make_option(c("-a", "--altcol"), action="store", default=NA, type='character', help="Name of the alternative allele column in the base file"),
-  make_option(c("-f", "--freqcol"), action="store", default=NA, type='character', help="Name of the allele frequency column in the base file"),
+  make_option(c("-f", "--freqcol"), action="store", default=NA, type='character', help="Name of the effect allele frequency column in the base file"),
   make_option(c("-m", "--measurecol"), action="store", default=NA, type='character', help="Name of the beta/log(OR)/effect size column in the base file"),
   make_option(c("-e", "--secol"), action="store", default=NA, type='character', help="Name of the column of the standard error of the beta/log(OR)/effect size value in the base file"),
   make_option(c("-s", "--samples"), action="store", default=NA, type='character', help="Sample size of the GWAS"),
@@ -112,22 +112,16 @@ sumstats <- subset(sumstats, CHR!="x" & CHR!="X" & CHR!="y" & CHR!="Y")
 str(sumstats)
 
 # Compute PGS using GWAS summary statistics
-# PGS <- rapidopgs_single(
-#   data = sumstats,
-#   N = opt$sample_par,
-#   trait = opt$trait,
-#   build = opt$build,
-#   pi_i = opt$pii,
-#   sd.prior = opt$prior,
-#   filt_threshold = opt$fthrs,
-#   recalc = opt$recalc,
-#   reference = opt$reffile
-# )
-
 PGS <- rapidopgs_single(
   data = sumstats,
-  trait = "cc",
-  build = opt$build
+  N = opt$sample_par,
+  trait = opt$trait,
+  build = opt$build,
+  pi_i = opt$pii,
+  sd.prior = opt$prior,
+  filt_threshold = opt$fthrs,
+  recalc = opt$recalc,
+  reference = opt$reffile
 )
 
 str(PGS)

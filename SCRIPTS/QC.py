@@ -23,7 +23,7 @@ args = vars(ap.parse_args())
 base_variant_ids = set()
 base_variants_count, stats_occurrence_count, removed_count = 0, 0, 0
 
-# Read the base file to get a list of variant IDs
+# Read the base file to get a set of variant IDs
 with gzip.open(args['base'], 'rb') as f:
     header = f.readline().decode("utf-8").split()
     base_id_col_index = header.index(args['bf_idcol'])
@@ -43,7 +43,7 @@ with gzip.open(args['base'], 'rb') as f:
 
 base_unique_IDs_count = len(base_variant_ids)
 
-# Read the stats file
+# Read the stats file and remove IDs in the base_variant_ids set if they do not meet the provided thresholds
 with gzip.open(args['stats'], 'rb') as f:
 
     # Get the indices of the required columns
@@ -51,10 +51,6 @@ with gzip.open(args['stats'], 'rb') as f:
     stats_id_col_index = header.index(args['stats_idcol'])
     stats_maf_col_index = header.index(args['stats_mafcol'])
     stats_info_col_index = header.index(args['stats_infocol'])
-
-    print(stats_id_col_index)
-    print(stats_maf_col_index)
-    print(stats_info_col_index)
 
     while True:
         try:
@@ -75,7 +71,7 @@ with gzip.open(args['stats'], 'rb') as f:
         except:
             break
 
-# Read the base file again, this time to write the filtered variants to a file
+# Read the base file again, this time to write the variants that occur in the base_variant_ids set to a file
 with gzip.open(args['base'], 'rb') as f:
 
     with gzip.open(args['out'], 'wb') as o:

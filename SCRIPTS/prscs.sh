@@ -30,6 +30,13 @@ else
     exit 1
 fi
 
+# Here we specify the maximum number of threads used by scipy in de PRS calculation
+if [ "$PRSCS_THREADS" != "" ]; then
+    export MKL_NUM_THREADS=$PRSCS_THREADS
+    export NUMEXPR_NUM_THREADS=$PRSCS_THREADS
+    export OMP_NUM_THREADS=$PRSCS_THREADS
+fi
+
 # Perform PRS-CS
 ${PYTHONPATH} ${PRSCS} \
 --ref_dir=${LDDATA} \

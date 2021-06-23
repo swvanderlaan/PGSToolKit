@@ -44,6 +44,8 @@ colnames(sumstats)[colnames(sumstats) == opt$altcol] <- "A2"
 colnames(sumstats)[colnames(sumstats) == opt$measurecol] <- toupper(opt$measure)
 colnames(sumstats)[colnames(sumstats) == opt$pvaluecol] <- "P"
 
+str(sumstats)
+
 # Write the PGS table to a file so it can be read by PRS-CS
 export <- sumstats[,c("SNP", "A1", "A2", toupper(opt$measure), "P")]
 write.table(export, file=opt$output, row.names=FALSE, sep="\t", quote=FALSE)

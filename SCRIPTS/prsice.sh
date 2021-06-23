@@ -1,6 +1,11 @@
 #!/bin/bash
 
-# Wrapper script for PRSice2: https://www.prsice.info
+# Wrapper script for PRSice2
+#
+#   S. W. Choi and P. F. O’Reilly, “PRSice-2: Polygenic Risk Score software for biobank-scale data,” 
+#   GigaScience, vol. 8, no. 7, 2019, doi: 10.1093/gigascience/giz082.
+#
+# For additional info on PRSice2 see https://www.prsice.info
 
 # Set the optional LD reference dataset
 if [[ ${LDDATA} != "" ]]; then

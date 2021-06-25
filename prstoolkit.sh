@@ -306,19 +306,20 @@ echo ""
 echo "Risk score computation will now commence."
 echo ""
 
+# Polygenic scores will be stored in this file
 RESULTS_FILE=${SUBPROJECT_DIR}/${OUTPUTNAME}_results.txt
 
 ##########################################################################################
 ### Run the individual PRS method scripts
 if [[ ${PRSMETHOD} == "PLINK" ]]; then
 
-	# Calculate the effect sizes for each chromosome
+	# Calculate scores per chromosome for each individual in the target population
 	### TODO: make this run in parallel
 	PLINK_HEADER="TRUE"
 	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${VAL_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},SNP_COL=${BF_ID_COL},EFFECT_COL=${BF_EFFECT_COL},SCORE_COL=${BF_STAT_COL},PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
 	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
 
-	# Sum the effect sizes to calculate the final score
+	# Sum the scores to calculate the final polygenic score
 	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -r "SCORE1_SUM" -o ${RESULTS_FILE})
 
 elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
@@ -356,7 +357,7 @@ elif [[ ${PRSMETHOD} == "PRSICE" ]]; then
 	# Copy the results from the output to the results folder
 	awk '//{print $1,$2,$4 }' ${PRSICE_OUTPUTNAME}.best > ${RESULTS_FILE}
 	echo "The scores best fitted to the \"${PRSICE_PHENOTYPE}\" phenotype were written to the results folder."
-	echo "Note that PRSice has potentially stored additional scores at different P-value thresholds in the tmp folder."
+	echo "Note that PRSice has potentially stored additional scores at different P-value thresholds in the work directory depending on the provided parameters."
 	echo "For more info visit https://www.prsice.info/step_by_step/"
 
 elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
@@ -364,7 +365,7 @@ elif [[ ${PRSMETHOD} == "RAPIDOPGS" ]]; then
 	# File for storing the effect sizes computed by Rapido
 	WEIGHTS_FILE="${PRSDIR}/Rapido_weights.txt"
 
-	# Calculate weights using RapidoPGS
+	# Calculate weights
 	RAPIDO_JOBID=$(sbatch --parsable --wait --job-name=PRS_RAPIDO ${QC_DEPENDENCY} --time ${RUNTIME_RAPIDO} --mem ${MEMORY_RAPIDO} -o ${LOGDIR}/${OUTPUTNAME}_RAPIDO.log ${PRSTOOLKITSCRIPTS}/rapidopgs.R -k ${PRSDIR} -o ${WEIGHTS_FILE} -b ${BASEDATA} -d ${BF_BUILD} -i ${BF_ID_COL} -c ${BF_CHR_COL} -p ${BF_POS_COL} -r ${BF_NON_EFFECT_COL} -a ${BF_EFFECT_COL} -f "${BF_FRQ_COL}" -m ${BF_STAT_COL} -e ${BF_SE_COL} -s ${BF_SAMPLE_SIZE} -n "${BF_SBJ_COL}" -g "${RP_filt_threshold}" -j "${RP_recalc}" -l ${BF_TARGET_TYPE} -v "${RP_ppi}" -x "${RP_prior}" -z "${RP_REF}")
 	RAPIDO_DEPENDENCY="--dependency=afterok:${RAPIDO_JOBID}"
 	

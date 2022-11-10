@@ -3,7 +3,7 @@ PRSToolKit
 ##### _v0.9-alpha "Aa"_
 [![DOI](https://zenodo.org/badge/128260489.svg)](https://zenodo.org/badge/latestdoi/128260489)
 
-A Toolkit to calculate Polygenic (Risk) Scores (PGS) using _PLINK_, _LDpred_ or _PRSice_.
+A Toolkit to calculate Polygenic Risk Scores (PRS) using _PLINK_, _LDpred_ or _PRSice_.
 
 
 --------------

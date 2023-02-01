@@ -12,7 +12,7 @@ Current supported features are:
 
 - Perform _quality control_ by filtering variants based on imputation score and minor allele frequency.
 - Compute polygenic scores using _PRS-CS_, _RapidoPGS_ and _PRSice2_ based on GWAS summary statistics.
-- Compute polygenic scores using the [allelic score](https://www.cog-genomics.org/plink/1.9/score) function of PLINK2 based on posterior variant effect sizes or weights.
+- Compute polygenic scores using the [allelic score](https://www.cog-genomics.org/plink/2.0/score) function of PLINK2 based on posterior variant effect sizes or weights.
 
 #### Instructions and usage
 Detailed instructions on using **PGSToolKit** can be found in the [Wiki](https://github.com/swvanderlaan/PRSToolKit/wiki).

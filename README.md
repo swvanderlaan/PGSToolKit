@@ -6,7 +6,7 @@
 
 A Toolkit to calculate Polygenic Scores (PGS) using _PLINK2_, _PRSice2_, _RapidoGS_, or _PRS-CS_. 
 
-The **PGSToolKit** acts as a wrapper tool for several PGS methods and can be used to compute polygenic scores for a target population using genome-wide association study (GWSA) summary statistics and a reference (_e.g._ 1000G phase 3). Current methods for computing polygenic scores require a wide range of different input formats and parameters. **PGSToolKit** provides a streamlined and clean alternative by using a fixed data format and parameters, configurable from a single configuration file. In short, a configuration file, `pgstoolkit.conf`, is set, and `pgstoolkit.sh` can be readily submitted to the server. 
+The **PGSToolKit** acts as a wrapper tool for several PGS methods and can be used to compute polygenic scores for a target population using genome-wide association study (GWAS) summary statistics and a reference (_e.g._ 1000G phase 3). Current methods for computing polygenic scores require a wide range of different input formats and parameters. **PGSToolKit** provides a streamlined and clean alternative by using a fixed data format and parameters, configurable from a single configuration file. In short, a configuration file, `pgstoolkit.conf`, is set, and `pgstoolkit.sh` can be readily submitted to the server. 
 
 Current supported features are:
 

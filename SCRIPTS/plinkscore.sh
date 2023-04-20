@@ -54,6 +54,11 @@ else
 fi
 
 # Compute the PRS score using PLINK --score
+# By default the average sum is calculated, `cols=+scoresums` 
+# causes PLINK to add the sum of the score
+# check these links:
+# - `cols=` https://www.cog-genomics.org/plink/2.0/general_usage#colset
+# - --score https://www.cog-genomics.org/plink/2.0/score
 for file in ${VALIDATIONDATA}/${VALIDATIONPREFIX}*.bgen; do
     ${PLINK} \
     --bgen $file ${REF_POS} \

@@ -1,10 +1,4 @@
 #!/bin/bash
-#SBATCH --job-name="PRS workflow"                                 #Job name
-#SBATCH --output=/home/dhl_ec/aligterink/logs/batchjob_%j.log     # Standard output and error log
-#SBATCH --mail-user=a.j.ligterink@umcutrecht.nl                   # Mail
-#SBATCH --mail-type=NONE		                                  # Mail events (NONE, BEGIN, END, FAIL, ALL)
-#SBATCH --time=50:00:00                                           # Time limit hrs:min:sec
-#SBATCH --mem=4G	                                              # RAM required per node
 
 ##########################################################################################
 ### Setting colouring
@@ -200,24 +194,24 @@ fi
 SUBPROJECT_DIR=${OUTPUTDIR}/${SUBPROJECT_DIR_NAME}
 
 echo ""
-echo "Checking for the existence of the ${LOG_DIRNAME} directory [ ${PROJECT_DIR}/${LOG_DIRNAME} ]."
-if [ ! -d ${PROJECT_DIR}/${LOG_DIRNAME} ]; then
+echo "Checking for the existence of the ${LOG_DIRNAME} directory [ ${OUTPUTDIR}/${LOG_DIRNAME} ]."
+if [ ! -d ${OUTPUTDIR}/${LOG_DIRNAME} ]; then
 	echo "> ${LOG_DIRNAME} directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECT_DIR}/${LOG_DIRNAME}
+	mkdir -v ${OUTPUTDIR}/${LOG_DIRNAME}
 else
 	echo "> ${LOG_DIRNAME} directory already exists."
 fi
-LOGDIR=${PROJECT_DIR}/${LOG_DIRNAME}
+LOGDIR=${OUTPUTDIR}/${LOG_DIRNAME}
 
 echo ""
-echo "Checking for the existence of the main working directory [ ${PROJECT_DIR}/${MAIN_WORKDIR_NAME} ]."
-if [ ! -d ${PROJECT_DIR}/${MAIN_WORKDIR_NAME} ]; then
+echo "Checking for the existence of the main working directory [ ${OUTPUTDIR}/${MAIN_WORKDIR_NAME} ]."
+if [ ! -d ${OUTPUTDIR}/${MAIN_WORKDIR_NAME} ]; then
 	echo "> ${MAIN_WORKDIR_NAME} directory doesn't exist - Mr. Bourne will create it for you."
-	mkdir -v ${PROJECT_DIR}/${MAIN_WORKDIR_NAME}
+	mkdir -v ${OUTPUTDIR}/${MAIN_WORKDIR_NAME}
 else
 	echo "> ${MAIN_WORKDIR_NAME} directory already exists."
 fi
-MAIN_WORKDIR=${PROJECT_DIR}/${MAIN_WORKDIR_NAME}
+MAIN_WORKDIR=${OUTPUTDIR}/${MAIN_WORKDIR_NAME}
 
 echo ""
 echo "Checking for the existence of the working directory for this project [ ${MAIN_WORKDIR}/${OUTPUTNAME} ]."
@@ -316,12 +310,12 @@ if [[ ${PRSMETHOD} == "PLINK" ]]; then
 	# Calculate scores per chromosome for each individual in the target population
 	### TODO: make this run in parallel
 	PLINK_HEADER="TRUE"
-	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${VAL_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},SNP_COL=${BF_ID_COL},EFFECT_COL=${BF_EFFECT_COL},SCORE_COL=${BF_STAT_COL},PLINK_SETTINGS=${PLINK_SETTINGS},PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
+	PLINKSCORE_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSCORE ${QC_DEPENDENCY} --time ${RUNTIME_PLINKSCORE} --mem ${MEMORY_PLINKSCORE} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_score.log --export=ALL,VALIDATIONDATA=${VALIDATIONDATA},VALIDATIONPREFIX=${VALIDATIONPREFIX},PLINK=${PLINK},REF_POS=${VAL_REF_POS},SAMPLE_FILE=${SAMPLE_FILE},PRSDIR=${PRSDIR},WEIGHTS_FILE=${BASEDATA},SNP_COL=${BF_ID_COL},EFFECT_COL=${BF_EFFECT_COL},SCORE_COL=${BF_STAT_COL},PLINK_SETTINGS="${PLINK_SETTINGS}",PLINK_HEADER=${PLINK_HEADER} ${PRSTOOLKITSCRIPTS}/plinkscore.sh)
 	PLINKSCORE_DEPENDENCY="--dependency=afterok:${PLINKSCORE_JOBID}"
 
 	# Sum the scores to calculate the final polygenic score
 	PLINKSUM_JOBID=$(sbatch --parsable --wait --job-name=PRS_PLINKSUM ${PLINKSCORE_DEPENDENCY} --time ${RUNTIME_PLINKSUM} --mem ${MEMORY_PLINKSUM} -o ${LOGDIR}/${OUTPUTNAME}_PLINK_sum.log ${PRSTOOLKITSCRIPTS}/sum_plink_scores.R -s ${SAMPLE_FILE} -f 1 -i 2 -d ${PRSDIR} -p plink2_${VALIDATIONPREFIX} -r "SCORE1_SUM" -o ${RESULTS_FILE})
-
+	
 elif [[ ${PRSMETHOD} == "PRSCS" ]]; then
 
 	# Parse the base file to PRS-CS format (and also unzip it)

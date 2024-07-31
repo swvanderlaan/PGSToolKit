@@ -1,8 +1,8 @@
 #!/bin/bash
-CHR=$1
-PLINK=$2
-BGENIX=$3
-STUDYDIR=$4
+CHR=${SLURM_ARRAY_TASK_ID}  # The chromosome number automatically assigned by SLURM
+PLINK=$1
+BGENIX=$2
+STUDYDIR=$3
 echo "> converting chromosome ${CHR}..."
 echo "...8-bits version and indexing"
 if [ "$CHR" -eq 23 ]; then

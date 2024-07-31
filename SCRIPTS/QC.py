@@ -1,4 +1,7 @@
-#!/hpc/local/CentOS7/dhl_ec/software/python37/bin/python3.7
+#!/hpc/local/Rocky8/dhl_ec/software/mambaforge3/envs/pgstoolkit/bin/python
+
+### DEPRECATED
+### #!/hpc/local/CentOS7/dhl_ec/software/python37/bin/python3.7
 
 import gzip
 import argparse

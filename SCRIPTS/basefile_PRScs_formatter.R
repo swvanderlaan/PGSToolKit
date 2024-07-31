@@ -1,4 +1,7 @@
-#!/hpc/local/CentOS7/dhl_ec/software/R-3.6.3/R-3.6.3/bin/Rscript --vanilla
+#!/hpc/local/Rocky8/dhl_ec/software/R-3.6.3/R-3.6.3/bin/Rscript --vanilla
+
+### DEPRECATED
+### #!/hpc/local/CentOS7/dhl_ec/software/R-3.6.3/R-3.6.3/bin/Rscript --vanilla
 
 # R script for parsing the GWAS summary file to the default PRS-CS format.
 # More on the PRS-CS format can be found here: https://github.com/getian107/PRScs

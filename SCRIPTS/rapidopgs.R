@@ -1,4 +1,7 @@
-#!/hpc/local/CentOS7/dhl_ec/software/R-3.6.3/R-3.6.3/bin/Rscript --vanilla
+#!/hpc/local/Rocky8/dhl_ec/software/R-4.4.1/R-4.4.1/bin/Rscript --vanilla
+
+### DEPRECATED
+### #!/hpc/local/CentOS7/dhl_ec/software/R-3.6.3/R-3.6.3/bin/Rscript --vanilla
 
 # Wrapper script for RapidoPGS
 #

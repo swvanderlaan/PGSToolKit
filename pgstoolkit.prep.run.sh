@@ -47,11 +47,11 @@ echo ""
 echo "1. -- Converting VCF to bgen including indexing. This is done for 8-bit and 16-bit versions."
 ### b38
 ### This data includes the correct ID-type (chr#:BP, e.g. chr1:10711)
-convert_job_id=$(sbatch --parsable --array=1-22,X ${PGSTK}/pgstoolkit.prep.convert.run.sh ${SLURM_ARRAY_TASK_ID} $PLINK $BGENIX $STUDYDIR)
+convert_job_id=$(sbatch --parsable --array=1-23 ${PGSTK}/pgstoolkit.prep.convert.run.sh ${SLURM_ARRAY_TASK_ID} $PLINK $BGENIX $STUDYDIR)
 
 echo ""
 echo "2. -- Creating variant lists."
-list_variants_job_id=$(sbatch --parsable --array=1-22,X --dependency=afterok:${convert_job_id} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh ${SLURM_ARRAY_TASK_ID} $BGENIX $STUDYDIR)
+list_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${convert_job_id} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh ${SLURM_ARRAY_TASK_ID} $BGENIX $STUDYDIR)
 
 # Variantlist looks like this
 # alternate_ids	rsid	chromosome	position	number_of_alleles	first_allele	alternative_alleles

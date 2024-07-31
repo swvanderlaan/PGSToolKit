@@ -37,6 +37,12 @@ STUDYDIR="${STUDYDATADIR}/AEGS_QC_imputation_2023/aegscombo/_topmed_r3_f10_b38"
 ### b37 version -- deprecated
 ### STUDYDIR="${STUDYDATADIR}/AEGS_COMBINED_EAGLE2_1000Gp3v5HRCr11"
 
+### Job settings
+PREP_TIME="02:00:00"
+PREP_MEM="10G"
+PREP_MAIL="s.w.vanderlaan-2@umcutrecht.nl"
+PREP_MAILTYPE="FAIL"
+
 echo "========================================================================"
 echo "STEP 1 PGSToolKit pipeline"
 echo "========================================================================"
@@ -47,11 +53,11 @@ echo ""
 echo "1. -- Converting VCF to bgen including indexing. This is done for 8-bit and 16-bit versions."
 ### b38
 ### This data includes the correct ID-type (chr#:BP, e.g. chr1:10711)
-convert_job_id=$(sbatch --parsable --array=1-23 ${PGSTK}/pgstoolkit.prep.convert.run.sh ${SLURM_ARRAY_TASK_ID} $PLINK $BGENIX $STUDYDIR)
+convert_job_id=$(sbatch --parsable --array=1-23 --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh ${SLURM_ARRAY_TASK_ID} $PLINK $BGENIX $STUDYDIR)
 
 echo ""
 echo "2. -- Creating variant lists."
-list_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${convert_job_id} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh ${SLURM_ARRAY_TASK_ID} $BGENIX $STUDYDIR)
+list_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${convert_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh ${SLURM_ARRAY_TASK_ID} $BGENIX $STUDYDIR)
 
 # Variantlist looks like this
 # alternate_ids	rsid	chromosome	position	number_of_alleles	first_allele	alternative_alleles
@@ -62,7 +68,7 @@ list_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${con
 
 echo ""
 echo "3. -- Concatenating variant list."
-concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_job_id} ${PGSTK}/pgstoolkit.prep.concat_variants.run.sh $STUDYDIR)
+concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.concat_variants.run.sh $STUDYDIR)
 
 # Concatenated variantlist looks like this
 # variantid alt_ids rsid_aegs chromosome position number_of_alleles first_allele alt_alleles
@@ -74,5 +80,5 @@ concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_
 
 echo ""
 echo "4. -- Calculating frequencies."
-freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} ${PGSTK}/pgstoolkit.prep.freq.run.sh ${SLURM_ARRAY_TASK_ID} $PLINK $STUDYDIR)
+freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh ${SLURM_ARRAY_TASK_ID} $PLINK $STUDYDIR)
 

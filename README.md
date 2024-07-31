@@ -11,17 +11,20 @@ The **PGSToolKit** acts as a wrapper tool for several PGS methods and can be use
 Current supported features are:
 
 - Perform _quality control_ by filtering variants based on imputation score and minor allele frequency.
-- Compute polygenic scores using _[PRS-CS](https://github.com/getian107/PRScs)_, _[RapidoPGS](https://github.com/GRealesM/RapidoPGS)_ and _[PRSice2](https://choishingwan.github.io/PRSice/)_ based on GWAS summary statistics.
+- Compute polygenic scores using 
+  - _[PRS-CS](https://github.com/getian107/PRScs)_, 
+  - _[RapidoPGS](https://github.com/GRealesM/RapidoPGS)_, and 
+  - _[PRSice2](https://choishingwan.github.io/PRSice/)_ based on GWAS summary statistics.
 - Compute polygenic scores using the [allelic score](https://www.cog-genomics.org/plink/2.0/score) function of _[PLINK2](https://www.cog-genomics.org/plink/2.0/)_ based on posterior variant effect sizes or weights.
 
 #### Instructions and usage
 Detailed instructions on using **PGSToolKit** can be found in the [Wiki](https://github.com/swvanderlaan/PRSToolKit/wiki).
 
 #### Requirements
-All scripts are annotated for debugging purposes - and future reference. **PGSToolKit** was tested within the context of a CentOS7 system with SLURM. 
+All scripts are annotated for debugging purposes - and future reference. **PGSToolKit** was tested within the context of a Rocky8 or CentOS7 system with SLURM. 
 
 
 --------------
 
 #### The MIT License (MIT)
-[Copyright (c)](copyright.md) 2017-2023 Sander W. van der Laan | s.w.vanderlaan [at] gmail [dot] com | [vanderlaanand.science](https://vanderlaanand.science) & [Anton Ligterink](https://www.linkedin.com/in/anton-ligterink/).
+[Copyright (c)](copyright.md) 2017-2024 Sander W. van der Laan | s.w.vanderlaan [at] gmail [dot] com | [vanderlaanand.science](https://vanderlaanand.science) & [Anton Ligterink](https://www.linkedin.com/in/anton-ligterink/).

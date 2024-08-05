@@ -21,16 +21,18 @@
 ### Excellent resource: https://2cjenn.github.io/PRS_Pipeline/
 ###
 
+### Set the software
+SOFTWARE="/hpc/local/Rocky8/dhl_ec/software"
+PGSTK="${SOFTWARE}/PGSToolKit"
+
+BGENIX="${SOFTWARE}/mambaforge3/bin/bgenix"
+PLINK="${SOFTWARE}/plink2_linux_x86_64_20240105_alpha_5_10/plink2"
+
 ### Set the project directory
 PROJECTDIR="/hpc/dhl_ec/svanderlaan/projects/"
 PGSDIR="/hpc/dhl_ec/svanderlaan/projects/polygenicscores"
 
-SOFTWARE="/hpc/local/Rocky8/dhl_ec/software"
-PGSTK="${SOFTWARE}/PGSToolKit"
-
-BGENIX="/hpc/local/Rocky8/dhl_ec/bin/bgenix"
-PLINK="${SOFTWARE}/plink2_linux_x86_64_20240105_alpha_5_10/plink2"
-
+### Set the study directory
 STUDYDATADIR="/hpc/dhl_ec/data/_ae_originals/"
 ### b38 -- TOPMed imputed
 STUDYDIR="${STUDYDATADIR}/AEGS_QC_imputation_2023/aegscombo/_topmed_r3_f10_b38"

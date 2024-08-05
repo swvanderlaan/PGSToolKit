@@ -1,8 +1,15 @@
 #!/bin/bash
-CHR=${SLURM_ARRAY_TASK_ID}  # The chromosome number automatically assigned by SLURM
-PLINK=$1
-BGENIX=$2
-STUDYDIR=$3
+# Array job: convert VCF to bgen format
+# CHR=${SLURM_ARRAY_TASK_ID}  # The chromosome number automatically assigned by SLURM
+# PLINK=$1
+# BGENIX=$2
+# STUDYDIR=$3
+# Set variables
+CHR=$1  # The chromosome number
+PLINK=$2
+BGENIX=$3
+STUDYDIR=$4
+# Converting
 echo "> converting chromosome ${CHR}..."
 echo "...8-bits version and indexing"
 if [ "$CHR" -eq 23 ]; then

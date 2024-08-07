@@ -78,7 +78,7 @@ done
 
 echo ""
 echo "3. -- Concatenating variant list."
-concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.concat_variants.run.sh $STUDYDIR)
+# concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.concat_variants.run.sh $STUDYDIR)
 
 # Concatenated variantlist looks like this
 # variantid alt_ids rsid_aegs chromosome position number_of_alleles first_allele alt_alleles
@@ -90,5 +90,5 @@ concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_
 
 echo ""
 echo "4. -- Calculating frequencies."
-freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh $PLINK $STUDYDIR)
+# freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh $PLINK $STUDYDIR)
 

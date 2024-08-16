@@ -21,9 +21,14 @@ STUDYDIR=$1
 # CHR=$1  # The chromosome number 
 # STUDYDIR=$2
 # List the variants
+# 8 bit
 bgenix -g ${STUDYDIR}/aegscombo.topmed_r3_f10_b38.split_norm_af_filter.8bit.chr${CHR}.bgen \
 -i ${STUDYDIR}/aegscombo.topmed_r3_f10_b38.split_norm_af_filter.8bit.chr${CHR}.bgen.bgi \
 -list | grep -v "#" > ${STUDYDIR}/aegscombo.topmed_r3_f10_b38.split_norm_af_filter.8bit.chr${CHR}.variantlist.txt; 
+# 16 bit
+bgenix -g ${STUDYDIR}/aegscombo.topmed_r3_f10_b38.split_norm_af_filter.16bit.chr${CHR}.bgen \
+-i ${STUDYDIR}/aegscombo.topmed_r3_f10_b38.split_norm_af_filter.16bit.chr${CHR}.bgen.bgi \
+-list | grep -v "#" > ${STUDYDIR}/aegscombo.topmed_r3_f10_b38.split_norm_af_filter.16bit.chr${CHR}.variantlist.txt; 
 
 # Deactivate the conda environment
 conda deactivate

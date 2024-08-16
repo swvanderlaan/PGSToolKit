@@ -3,6 +3,7 @@
 CHR=${SLURM_ARRAY_TASK_ID}  # The chromosome number automatically assigned by SLURM
 PLINK=$1
 STUDYDIR=$2
+STUDYDATADIR=$3
 echo "> calculating frequencies for chromosome ${CHR}..."
 # 8 bit
 $PLINK \

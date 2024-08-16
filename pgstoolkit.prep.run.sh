@@ -56,18 +56,21 @@ echo "1. -- Converting VCF to bgen including indexing. This is done for 8-bit an
 ### b38
 ### This data includes the correct ID-type (chr#:BP, e.g. chr1:10711)
 # convert_job_id=$(sbatch --parsable --array=1-23 --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh $PLINK $BGENIX $STUDYDIR)
-for CHR in {1..23}; do
-    echo "> submitting conversion job for chromosome ${CHR}..."
-    convert_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh $CHR $PLINK $BGENIX $STUDYDIR)
-done
+# For-loop individual job version
+# for CHR in {1..23}; do
+#     echo "> submitting conversion job for chromosome ${CHR}..."
+#     convert_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh $CHR $PLINK $BGENIX $STUDYDIR)
+# done
 
 echo ""
 echo "2. -- Creating variant lists."
 # list_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${convert_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $BGENIX $STUDYDIR)
-for CHR in {1..23}; do
-    echo "> submitting job to list variants for chromosome ${CHR}..."
-    list_variants_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $CHR $BGENIX $STUDYDIR)
-done
+list_variants_job_id=$(sbatch --parsable --array=1-23 --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $BGENIX $STUDYDIR)
+# For-loop individual job version
+# for CHR in {1..23}; do
+#     echo "> submitting job to list variants for chromosome ${CHR}..."
+#     list_variants_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $CHR $BGENIX $STUDYDIR)
+# done
 
 # Variantlist looks like this
 # alternate_ids	rsid	chromosome	position	number_of_alleles	first_allele	alternative_alleles
@@ -78,7 +81,7 @@ done
 
 echo ""
 echo "3. -- Concatenating variant list."
-# concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.concat_variants.run.sh $STUDYDIR)
+concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.concat_variants.run.sh $STUDYDIR)
 
 # Concatenated variantlist looks like this
 # variantid alt_ids rsid_aegs chromosome position number_of_alleles first_allele alt_alleles
@@ -90,5 +93,5 @@ echo "3. -- Concatenating variant list."
 
 echo ""
 echo "4. -- Calculating frequencies."
-# freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh $PLINK $STUDYDIR)
+freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh $PLINK $STUDYDIR)
 

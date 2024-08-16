@@ -107,7 +107,7 @@ concat_variants_job_id=$(sbatch --parsable --dependency=afterok:${list_variants_
 
 echo ""
 echo "4. -- Calculating frequencies."
-freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh $PLINK $STUDYDIR)
+freq_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh $PLINK $STUDYDIR)
 
 # Deactivate the conda environment
 conda deactivate

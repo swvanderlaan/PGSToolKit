@@ -1,4 +1,5 @@
 #!/bin/bash
+# Array job: list variants
 CHR=${SLURM_ARRAY_TASK_ID}  # The chromosome number automatically assigned by SLURM
 PLINK=$1
 STUDYDIR=$2

@@ -21,11 +21,25 @@
 ### Excellent resource: https://2cjenn.github.io/PRS_Pipeline/
 ###
 
+# Load the required conda environment and check if conda activate was successful
+echo "Loading required mamba environment containing the pgstoolkit installation..."
+eval "$(conda shell.bash hook)"
+conda activate pgstoolkit
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to activate pgstoolkit environment." >&2
+    exit 1
+fi
+echo "> Checking existence of relevant apps..."
+bgenix -help
+bcftools --version
+vcftools --version
+samtools --version
+
 ### Set the software
 SOFTWARE="/hpc/local/Rocky8/dhl_ec/software"
 PGSTK="${SOFTWARE}/PGSToolKit"
 
-BGENIX="${SOFTWARE}/mambaforge3/bin/bgenix"
 PLINK="${SOFTWARE}/plink2_linux_x86_64_20240105_alpha_5_10/plink2"
 
 ### Set the project directory
@@ -55,21 +69,21 @@ echo ""
 echo "1. -- Converting VCF to bgen including indexing. This is done for 8-bit and 16-bit versions."
 ### b38
 ### This data includes the correct ID-type (chr#:BP, e.g. chr1:10711)
-# convert_job_id=$(sbatch --parsable --array=1-23 --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh $PLINK $BGENIX $STUDYDIR)
+# convert_job_id=$(sbatch --parsable --array=1-23 --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh $PLINK $STUDYDIR)
 # For-loop individual job version
 # for CHR in {1..23}; do
 #     echo "> submitting conversion job for chromosome ${CHR}..."
-#     convert_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh $CHR $PLINK $BGENIX $STUDYDIR)
+#     convert_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.convert.run.sh $CHR $PLINK $STUDYDIR)
 # done
 
 echo ""
 echo "2. -- Creating variant lists."
-# list_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${convert_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $BGENIX $STUDYDIR)
-list_variants_job_id=$(sbatch --parsable --array=1-23 --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $BGENIX $STUDYDIR)
+# list_variants_job_id=$(sbatch --parsable --array=1-23 --dependency=afterok:${convert_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $STUDYDIR)
+list_variants_job_id=$(sbatch --parsable --array=1-23 --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $STUDYDIR)
 # For-loop individual job version
 # for CHR in {1..23}; do
 #     echo "> submitting job to list variants for chromosome ${CHR}..."
-#     list_variants_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $CHR $BGENIX $STUDYDIR)
+#     list_variants_job_id=$(sbatch --parsable --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.list_variants.run.sh $CHR $STUDYDIR)
 # done
 
 # Variantlist looks like this
@@ -95,3 +109,5 @@ echo ""
 echo "4. -- Calculating frequencies."
 freq_variants_job_id=$(sbatch --parsable --dependency=afterok:${concat_variants_job_id} --time ${PREP_TIME} --mem ${PREP_MEM} --mail-user ${PREP_MAIL} --mail-type ${PREP_MAILTYPE} ${PGSTK}/pgstoolkit.prep.freq.run.sh $PLINK $STUDYDIR)
 
+# Deactivate the conda environment
+conda deactivate
